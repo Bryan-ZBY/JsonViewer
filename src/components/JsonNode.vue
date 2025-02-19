@@ -135,34 +135,6 @@ export default {
   
 <style scoped>
 /* 样式保持不变 */
-body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background-color: #ffffff;
-    color: #000000;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-body.dark-mode {
-    background-color: #121212;
-    color: #ffffff;
-}
-
-
-/* 伪光标 */
-.cursor {
-    position: fixed;
-    top: -5px;
-    left: -1px;
-    background-color: yellow;
-    color: black;
-    padding: 2px 4px;
-    border-radius: 3px;
-    display: inline-block;
-    transition: transform 0.15s ease-out;
-    pointer-events: none;
-    /* 避免光标干扰鼠标事件 */
-}
 
 .json-container {
     font-family: monospace;
