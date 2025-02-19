@@ -115,18 +115,7 @@
   /* 注意需要移除 :hover 等伪类中的 scoped 限制 */
   /* 可以添加 /deep/ 或 ::v-deep 来处理子组件样式 */
 
-  body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #ffffff;
-      color: #000000;
-      transition: background-color 0.3s, color 0.3s;
-    }
 
-    body.dark-mode {
-      background-color: #121212;
-      color: #ffffff;
-    }
 
 
     /* 伪光标 */
