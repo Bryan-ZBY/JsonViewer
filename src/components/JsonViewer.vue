@@ -1,28 +1,26 @@
 <template>
-  <div class="json-container">
-    <ul v-if="jsonData">
-      <li v-for="(value, key) in jsonData" :key="key" class="eleli" 
-          @click="toggleCollapse($event, key)"
-          @mouseenter="showCopyButton($event, key)" 
-          @mouseleave="hideCopyButton($event, key)">
-        <span class="json-key">{{ key }}: </span>
-        <template v-if="isObjectOrArray(value)">
-          <span class="collapsible" :class="{ collapsed: collapsed[key] }">
-            {{ Array.isArray(value) ? '[' : '{' }}
+  <div class="json-container" ref="container">
+    <ul>
+      <li v-for="(item, index) in visibleItems" :key="item.key" class="eleli"
+          @click="toggleCollapse($event, item.key)"
+          @mouseenter="showCopyButton($event, item.key)"
+          @mouseleave="hideCopyButton($event, item.key)">
+        <span class="json-key">{{ item.key }}: </span>
+        <template v-if="item.isObjectOrArray">
+          <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
+            {{ Array.isArray(item.value) ? '[' : '{' }}
           </span>
-          <span class="summary" v-show="!collapsed[key]">{{ generateSummary(value) }}</span>
-          <button class="copy-button" v-show="showCopy[key]" 
-                  @click.stop="copyToClipboard(value, key)">Copy</button>
-          <div v-show="collapsed[key]" class="nested-container">
-            <JsonViewer :json-data="value" ref="childViewer" />
+          <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
+          <button class="copy-button" v-show="item.showCopy"
+                  @click.stop="copyToClipboard(item.value, item.key)">Copy</button>
+          <div v-show="item.isCollapsed" class="nested-container">
+            <JsonViewer :json-data="item.value" ref="childViewer" />
           </div>
         </template>
         <template v-else>
-          <span :class="getValueClass(value)" class="json-value-text">
-            {{ JSON.stringify(value) }}
-          </span>
-          <button class="copy-button" v-show="showCopy[key]" 
-                  @click.stop="copyToClipboard(value, key)">Copy</button>
+          <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
+          <button class="copy-button" v-show="item.showCopy"
+                  @click.stop="copyToClipboard(item.value, item.key)">Copy</button>
         </template>
       </li>
     </ul>
@@ -30,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, onMounted, defineExpose, nextTick } from 'vue';
+import { ref, onMounted, defineProps, defineExpose, nextTick } from 'vue';
 import { JsonData } from '../types/json';
 import { generateSummary } from '../utils/jsonUtils';
 
@@ -38,23 +36,88 @@ const props = defineProps<{
   jsonData: JsonData;
 }>();
 
-const collapsed = ref<Record<string, boolean>>({});
-const showCopy = ref<Record<string, boolean>>({});
+const container = ref<HTMLElement | null>(null);
 const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
+const visibleItems = ref<any[]>([]);
 
-// 初始化折叠状态
+let state: Record<string, { collapsed: boolean; showCopy: boolean }> = {};
+let flatData: any[] = [];
+let scrollTop = 0;
+const ITEM_HEIGHT = 21;
+const BUFFER_SIZE = 10;
+let currentSearchText = '';
+
+// 初始化state
+const ensureState = (key: string) => {
+  if (!state[key]) {
+    state[key] = { collapsed: false, showCopy: false };
+  }
+};
+
+// 扁平化数据
+const flattenData = (data: JsonData, parentKey = '') => {
+  const result = [];
+  for (const key in data) {
+    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+    const value = data[key];
+    const isObjectOrArray = typeof value === 'object' && value !== null;
+
+    ensureState(fullKey);
+
+    const item = {
+      key: fullKey,
+      value,
+      isObjectOrArray,
+      isCollapsed: state[fullKey].collapsed,
+      showCopy: state[fullKey].showCopy,
+      summary: isObjectOrArray ? generateSummary(value) : '',
+      valueClass: isObjectOrArray ? '' : getValueClass(value),
+      highlightedValue: ''
+    };
+
+    if (!isObjectOrArray && currentSearchText) {
+      const valueStr = JSON.stringify(value);
+      item.highlightedValue = applyHighlight(valueStr, currentSearchText);
+    }
+
+    result.push(item);
+
+    if (isObjectOrArray && state[fullKey].collapsed) {
+      result.push(...flattenData(value, fullKey));
+    }
+  }
+  return result;
+};
+
+// 更新可见项
+const updateVisibleItems = () => {
+  if (!container.value) return;
+  const height = container.value.clientHeight;
+  const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER_SIZE);
+  const endIndex = Math.min(
+    flatData.length,
+    Math.ceil((scrollTop + height) / ITEM_HEIGHT) + BUFFER_SIZE
+  );
+  visibleItems.value = flatData.slice(startIndex, endIndex);
+};
+
+// 初始化数据
+const initData = () => {
+  flatData = flattenData(props.jsonData);
+  updateVisibleItems();
+};
+
 onMounted(() => {
-  if (props.jsonData) {
-    Object.keys(props.jsonData).forEach(key => {
-      collapsed.value[key] = false;
+  initData();
+  if (container.value) {
+    container.value.addEventListener('scroll', () => {
+      scrollTop = container.value!.scrollTop;
+      requestAnimationFrame(updateVisibleItems);
     });
   }
 });
 
-const isObjectOrArray = (value: any): boolean => {
-  return typeof value === 'object' && value !== null;
-};
-
+// 工具函数
 const getValueClass = (value: any): string => {
   switch (typeof value) {
     case 'string': return 'json-string';
@@ -67,118 +130,103 @@ const getValueClass = (value: any): string => {
 const toggleCollapse = (event: Event, key: string) => {
   event.stopPropagation();
   if ((event.target as HTMLElement).classList.contains('copy-button')) return;
-  collapsed.value[key] = !collapsed.value[key];
+  ensureState(key);
+  state[key].collapsed = !state[key].collapsed;
+  flatData = flattenData(props.jsonData);
+  updateVisibleItems();
 };
 
 const showCopyButton = (event: Event, key: string) => {
   event.stopPropagation();
-  showCopy.value[key] = true;
+  ensureState(key);
+  state[key].showCopy = true;
+  updateVisibleItems();
 };
 
 const hideCopyButton = (event: Event, key: string) => {
   event.stopPropagation();
-  showCopy.value[key] = false;
+  ensureState(key);
+  state[key].showCopy = false;
+  updateVisibleItems();
 };
 
 const copyToClipboard = (value: any, key: string) => {
   const text = JSON.stringify(value, null, 2);
   navigator.clipboard.writeText(text).then(() => {
-    const button = document.querySelector(`li:nth-child(${Object.keys(props.jsonData).indexOf(key) + 1}) .copy-button`) as HTMLButtonElement;
-    button.textContent = 'Copied!';
-    setTimeout(() => button.textContent = 'Copy', 1500);
+    const button = document.querySelector(`li .copy-button`) as HTMLButtonElement;
+    if (button) {
+      button.textContent = 'Copied!';
+      setTimeout(() => (button.textContent = 'Copy'), 1500);
+    }
   });
 };
 
-const collapseAll = () => {
-  if (props.jsonData) {
-    Object.keys(props.jsonData).forEach(key => {
-      collapsed.value[key] = false;
-    });
-    childViewer.value.forEach(child => child.collapseAll());
-  }
+// 高亮辅助函数
+const applyHighlight = (text: string, searchText: string) => {
+  const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  return text.replace(regex, '<span class="highlight">$1</span>');
 };
 
 // 优化后的搜索函数
-const performSearch = async (searchText: string) => {
-  if (!searchText || !props.jsonData) return;
+const performSearch = (searchText: string) => {
+  if (!searchText || !props.jsonData) {
+    currentSearchText = '';
+    flatData = flattenData(props.jsonData);
+    updateVisibleItems();
+    return;
+  }
 
+  currentSearchText = searchText;
   const searchLower = searchText.toLowerCase();
-  const matchedPaths: string[][] = [];
+  const matchedPaths: Set<string> = new Set();
 
-  // 高效搜索并收集匹配路径
+  // 搜索并收集匹配路径
   const searchInData = (data: JsonData, path: string[] = []) => {
     for (const key in data) {
       const currentPath = [...path, key];
+      const fullKey = currentPath.join('.');
       const value = data[key];
       const keyLower = key.toLowerCase();
       const valueStr = JSON.stringify(value).toLowerCase();
 
       if (keyLower.includes(searchLower) || valueStr.includes(searchLower)) {
-        matchedPaths.push(currentPath);
+        currentPath.forEach((_, i) => {
+          matchedPaths.add(currentPath.slice(0, i + 1).join('.'));
+        });
       }
 
-      if (isObjectOrArray(value)) {
+      if (typeof value === 'object' && value !== null) {
         searchInData(value, currentPath);
       }
     }
   };
 
-  // 立即展开所有匹配路径
+  // 展开匹配路径并更新数据
   const expandPaths = () => {
-    matchedPaths.forEach(path => {
-      let currentLevel = collapsed.value;
-      path.forEach(key => {
-        currentLevel[key] = true;
-      });
+    matchedPaths.forEach(key => {
+      ensureState(key);
+      state[key].collapsed = true;
     });
+    flatData = flattenData(props.jsonData);
+    updateVisibleItems();
   };
 
-  // 高亮匹配内容
-  const highlightMatches = (element: Element, text: string) => {
-    const regex = new RegExp(`(${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    const walker = document.createTreeWalker(
-      element,
-      NodeFilter.SHOW_TEXT,
-      { acceptNode: node => node.parentElement?.className.includes('copy-button') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT }
-    );
-
-    const nodes: Text[] = [];
-    let node;
-    while ((node = walker.nextNode())) {
-      nodes.push(node as Text);
-    }
-
-    nodes.forEach(textNode => {
-      const text = textNode.textContent || '';
-      if (text.toLowerCase().includes(searchLower)) {
-        const fragment = document.createDocumentFragment();
-        const span = document.createElement('span');
-        span.innerHTML = text.replace(regex, '<span class="highlight">$1</span>');
-        fragment.appendChild(span);
-        textNode.parentNode?.replaceChild(fragment, textNode);
-      }
-    });
-  };
-
-  // 执行搜索
   searchInData(props.jsonData);
   expandPaths();
-  
-  await nextTick();
-  clearHighlights();
-  const container = document.querySelector('.json-container');
-  if (container) {
-    highlightMatches(container, searchText);
+
+  // 通知子组件
+  nextTick(() => {
     childViewer.value.forEach(child => child.performSearch(searchText));
-  }
+  });
 };
 
-// 清空高亮
-const clearHighlights = () => {
-  document.querySelectorAll('.highlight').forEach(highlight => {
-    const parent = highlight.parentNode;
-    parent?.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+const collapseAll = () => {
+  Object.keys(state).forEach(key => {
+    state[key].collapsed = false;
   });
+  flatData = flattenData(props.jsonData);
+  updateVisibleItems();
+  childViewer.value.forEach(child => child.collapseAll());
 };
 
 defineExpose({ performSearch, collapseAll });
@@ -188,6 +236,13 @@ defineExpose({ performSearch, collapseAll });
 .json-container {
   font-family: monospace;
   white-space: pre;
+  overflow-y: auto;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .json-key {
@@ -239,7 +294,7 @@ defineExpose({ performSearch, collapseAll });
 }
 
 .json-value-text {
-  display: inline; /* 确保文本直接显示，无额外间距 */
+  display: inline;
 }
 
 .collapsible {
@@ -263,14 +318,14 @@ defineExpose({ performSearch, collapseAll });
   max-width: calc(100% - 50px);
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 21px; /* 保持与原始一致 */
-  margin: 0; /* 移除默认外边距 */
-  padding: 0; /* 移除默认内边距 */
+  line-height: 21px;
+  margin: 0;
+  padding: 0;
 }
 
 .nested-container {
-  margin-left: 20px; /* 嵌套内容的缩进，与原始一致 */
-  padding: 0; /* 移除多余内边距 */
+  margin-left: 20px;
+  padding: 0;
 }
 
 .summary {
@@ -283,12 +338,12 @@ defineExpose({ performSearch, collapseAll });
 }
 
 .highlight {
-  background-color: #ffff00; /* 黄色背景，与原始一致 */
-  color: #000000; /* 黑色文字，与原始一致 */
+  background-color: #ffff00;
+  color: #000000;
 }
 
 .dark-mode .highlight {
-  background-color: #ffeb3b; /* 深色模式下的高亮 */
+  background-color: #ffeb3b;
   color: #000000;
 }
 
@@ -306,11 +361,5 @@ defineExpose({ performSearch, collapseAll });
 
 .copy-button:hover {
   background-color: #0056b3;
-}
-
-ul {
-  list-style: none; /* 移除列表默认样式 */
-  padding: 0; /* 移除默认内边距 */
-  margin: 0; /* 移除默认外边距 */
 }
 </style>
