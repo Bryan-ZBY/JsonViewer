@@ -1,0 +1,33 @@
+/* 复制你原来的 style 内容，只需稍作调整 */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #ffffff;
+  color: #000000;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body.dark-mode {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+/* ... 保留原有样式 ... */
+
+/* 调整 Vue 组件特定的样式 */
+.json-container ul {
+  list-style: none;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.json-container div {
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out;
+  max-height: 0;
+  opacity: 0;
+}
+
+.json-container div.expanded {
+  opacity: 1;
+}
