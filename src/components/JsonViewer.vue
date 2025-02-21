@@ -7,12 +7,12 @@
           <span class="collapsible" :class="{ collapsed: collapsed[key] }">{{ Array.isArray(value) ? '[' : '{' }}</span>
           <span class="summary" v-show="!collapsed[key]">{{ generateSummary(value) }}</span>
           <button class="copy-button" v-show="showCopy[key]" @click.stop="copyToClipboard(value, key)">Copy</button>
-          <div v-show="collapsed[key]">
-            <JsonViewer :json-data="value" />
+          <div v-show="collapsed[key]" class="nested-container">
+            <JsonViewer :json-data="value" ref="childViewer" />
           </div>
         </template>
         <template v-else>
-          <span :class="getValueClass(value)">{{ JSON.stringify(value) }}</span>
+          <span :class="getValueClass(value)" class="json-value-text">{{ JSON.stringify(value) }}</span>
           <button class="copy-button" v-show="showCopy[key]" @click.stop="copyToClipboard(value, key)">Copy</button>
         </template>
       </li>
@@ -21,21 +21,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, defineProps, onMounted } from 'vue';
+import { ref, defineProps, onMounted, defineExpose, nextTick } from 'vue';
 import { JsonData } from '../types/json';
 import { generateSummary } from '../utils/jsonUtils';
 
-// 定义 props，确保 jsonData 是必需的
 const props = defineProps<{
-  jsonData: JsonData; // JsonData 类型已定义
+  jsonData: JsonData;
 }>();
 
 const collapsed = ref<Record<string, boolean>>({});
 const showCopy = ref<Record<string, boolean>>({});
+const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
 
-// 初始化每个键的折叠状态为 false（展开）
+// 初始化折叠状态
 onMounted(() => {
-  if (props.jsonData) { // 使用 props.jsonData，确保访问正确
+  if (props.jsonData) {
     for (const key in props.jsonData) {
       collapsed.value[key] = false; // 默认展开
     }
@@ -55,7 +55,7 @@ const getValueClass = (value: any): string => {
 };
 
 const toggleCollapse = (event: Event, key: string) => {
-  event.stopPropagation(); // 阻止事件冒泡到父节点
+  event.stopPropagation();
   if ((event.target as HTMLElement).classList.contains('copy-button')) return;
   collapsed.value[key] = !collapsed.value[key];
 };
@@ -79,14 +79,110 @@ const copyToClipboard = (value: any, key: string) => {
   }).catch(err => alert('Copy failed: ' + err));
 };
 
-const performSearch = (searchText: string) => {
-  // 搜索逻辑保持不变
-};
-
 const collapseAll = () => {
   if (props.jsonData) {
     for (const key in props.jsonData) {
-      collapsed.value[key] = true; // 收起所有节点
+      collapsed.value[key] = false; // 收起所有节点（隐藏子内容）
+    }
+    childViewer.value.forEach(child => child.collapseAll());
+  }
+};
+
+const performSearch = async (searchText: string) => {
+  if (!searchText || !props.jsonData) return;
+
+  const searchLower = searchText.toLowerCase();
+
+  // 保存原始折叠状态
+  const originalCollapsed = { ...collapsed.value };
+
+  // 搜索并展开匹配节点
+  const searchInData = (data: JsonData, parentPath: string[] = []) => {
+    if (typeof data !== 'object' || data === null) {
+      const valueStr = JSON.stringify(data).toLowerCase();
+      if (valueStr.includes(searchLower)) {
+        expandPath(parentPath);
+      }
+      return;
+    }
+
+    for (const key in data) {
+      const newPath = [...parentPath, key];
+      const value = data[key];
+      const keyStr = key.toLowerCase();
+      const valueStr = JSON.stringify(value).toLowerCase();
+
+      if (keyStr.includes(searchLower) || valueStr.includes(searchLower)) {
+        expandPath(newPath); // 展开包含匹配的节点
+      }
+
+      if (isObjectOrArray(value)) {
+        searchInData(value, newPath);
+      }
+    }
+  };
+
+  // 展开匹配路径
+  const expandPath = (path: string[]) => {
+    let currentData = props.jsonData;
+    for (const key of path) {
+      if (collapsed.value[key] !== undefined) {
+        collapsed.value[key] = true; // 展开节点
+      }
+      if (typeof currentData === 'object' && currentData !== null) {
+        currentData = (currentData as any)[key];
+      }
+    }
+  };
+
+  // 清除之前的高亮
+  clearHighlights();
+
+  // 执行搜索
+  searchInData(props.jsonData);
+
+  // 高亮匹配内容（等待 DOM 更新）
+  await nextTick();
+  const container = document.querySelector('.json-container');
+  if (container) {
+    highlightMatches(container, searchText);
+    // 确保高亮应用到所有嵌套内容
+    childViewer.value.forEach(child => child.performSearch(searchText));
+  }
+
+  // 恢复未匹配节点的原始状态
+  for (const key in originalCollapsed) {
+    if (!collapsed.value[key]) {
+      collapsed.value[key] = originalCollapsed[key];
+    }
+  }
+};
+
+// 清除高亮
+const clearHighlights = () => {
+  document.querySelectorAll('.highlight').forEach(highlight => {
+    const parent = highlight.parentNode;
+    if (parent) {
+      parent.replaceChild(document.createTextNode(highlight.textContent || ''), highlight);
+    }
+  });
+};
+
+// 高亮匹配内容（与原始逻辑一致，优化递归）
+const highlightMatches = (node: Node, searchText: string) => {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent || '';
+    const regex = new RegExp(`(${searchText})`, 'gi');
+    const newText = text.replace(regex, '<span class="highlight">$1</span>');
+    if (newText !== text) {
+      const span = document.createElement('span');
+      span.innerHTML = newText;
+      node.parentNode?.replaceChild(span, node);
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    // 跳过某些元素（如按钮）以避免干扰
+    if (node.nodeName !== 'BUTTON') {
+      node.childNodes.forEach(child => highlightMatches(child, searchText));
     }
   }
 };
@@ -95,11 +191,10 @@ defineExpose({ performSearch, collapseAll });
 </script>
 
 <style scoped>
-/* 样式保持不变 */
 .json-container {
   font-family: monospace;
   white-space: pre;
-  margin-top: 20px;
+  /* margin-top: 20px; */
 }
 
 .json-key {
@@ -150,6 +245,10 @@ defineExpose({ performSearch, collapseAll });
   color: #6272a4;
 }
 
+.json-value-text {
+  display: inline; /* 确保文本直接显示，无额外间距 */
+}
+
 .collapsible {
   cursor: pointer;
 }
@@ -171,7 +270,14 @@ defineExpose({ performSearch, collapseAll });
   max-width: calc(100% - 50px);
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 21px;
+  line-height: 21px; /* 保持与原始一致 */
+  margin: 0; /* 移除默认外边距 */
+  padding: 0; /* 移除默认内边距 */
+}
+
+.nested-container {
+  margin-left: 20px; /* 嵌套内容的缩进，与原始一致 */
+  padding: 0; /* 移除多余内边距 */
 }
 
 .summary {
@@ -181,6 +287,16 @@ defineExpose({ performSearch, collapseAll });
 
 .dark-mode .summary {
   color: #aaa;
+}
+
+.highlight {
+  background-color: #ffff00; /* 黄色背景，与原始一致 */
+  color: #000000; /* 黑色文字，与原始一致 */
+}
+
+.dark-mode .highlight {
+  background-color: #ffeb3b; /* 深色模式下的高亮 */
+  color: #000000;
 }
 
 .copy-button {
@@ -197,5 +313,11 @@ defineExpose({ performSearch, collapseAll });
 
 .copy-button:hover {
   background-color: #0056b3;
+}
+
+ul {
+  list-style: none; /* 移除列表默认样式 */
+  padding: 0; /* 移除默认内边距 */
+  margin: 0; /* 移除默认外边距 */
 }
 </style>

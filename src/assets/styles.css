@@ -10,3 +10,15 @@ body.dark-mode {
   background-color: #121212;
   color: #ffffff;
 }
+
+
+.highlight {
+  background-color: #ffff00; /* 黄色背景，与原始一致 */
+  color: #000000; /* 黑色文字，与原始一致 */
+}
+
+.dark-mode .highlight {
+  background-color: #ffeb3b; /* 深色模式下的高亮 */
+  color: #000000;
+}
+
