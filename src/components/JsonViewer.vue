@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineProps, defineExpose, nextTick } from 'vue';
+import { ref, onMounted, defineProps, defineExpose, nextTick, watch } from 'vue';
 import { JsonData } from '../types/json';
 import { generateSummary } from '../utils/jsonUtils';
 
@@ -107,6 +107,12 @@ const initData = () => {
   updateVisibleItems();
 };
 
+// 监听 props.jsonData 的变化
+watch(() => props.jsonData, (newData) => {
+  state = {}; // 重置状态，避免旧数据干扰
+  initData(); // 重新初始化数据
+}, { deep: true }); // 使用 deep 选项监听对象内部变化
+
 onMounted(() => {
   initData();
   if (container.value) {
@@ -180,7 +186,6 @@ const performSearch = (searchText: string) => {
   const searchLower = searchText.toLowerCase();
   const matchedPaths: Set<string> = new Set();
 
-  // 搜索并收集匹配路径
   const searchInData = (data: JsonData, path: string[] = []) => {
     for (const key in data) {
       const currentPath = [...path, key];
@@ -201,7 +206,6 @@ const performSearch = (searchText: string) => {
     }
   };
 
-  // 展开匹配路径并更新数据
   const expandPaths = () => {
     matchedPaths.forEach(key => {
       ensureState(key);
@@ -214,7 +218,6 @@ const performSearch = (searchText: string) => {
   searchInData(props.jsonData);
   expandPaths();
 
-  // 通知子组件
   nextTick(() => {
     childViewer.value.forEach(child => child.performSearch(searchText));
   });
@@ -233,6 +236,7 @@ defineExpose({ performSearch, collapseAll });
 </script>
 
 <style scoped>
+/* 样式保持不变 */
 .json-container {
   font-family: monospace;
   white-space: pre;
