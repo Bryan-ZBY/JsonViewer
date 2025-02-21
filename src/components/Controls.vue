@@ -2,15 +2,16 @@
   <div class="controls">
     <textarea v-model="jsonInput" placeholder="Enter your JSON here..." class="json-input" @focus="logFocus"></textarea>
     <button @click="emitRenderJson">Render JSON</button>
-    <input v-model="searchInput" type="text" placeholder="Search JSON..." @keypress.enter="emitSearch" @focus="logFocus" />
-    <button @click="emitSearch">Search</button>
     <button @click="emit('collapse-all')">Collapse All</button>
     <button @click="emit('toggle-dark-mode')">Toggle Dark Mode</button>
+    <div class="search-wrapper">
+      <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted, onUnmounted } from 'vue';
 
 // 定义事件发射器并赋值给 emit
 const emit = defineEmits<{
@@ -22,6 +23,9 @@ const emit = defineEmits<{
 
 const jsonInput = ref('');
 const searchInput = ref('');
+const searchInputRef = ref<HTMLInputElement | null>(null);
+const searchHistory = ref<string[]>([]);
+const historyIndex = ref(-1);
 
 const emitRenderJson = () => {
   const cleanedInput = jsonInput.value.trim();
@@ -37,7 +41,14 @@ const emitRenderJson = () => {
 };
 
 const emitSearch = () => {
-  emit('search', searchInput.value.trim());
+  const trimmedInput = searchInput.value.trim();
+  if (trimmedInput) {
+    if (!searchHistory.value.includes(trimmedInput)) {
+      searchHistory.value.push(trimmedInput);
+    }
+    historyIndex.value = -1;
+    emit('search', trimmedInput);
+  }
 };
 
 const logFocus = (event: FocusEvent) => {
@@ -51,6 +62,52 @@ watch(jsonInput, (newValue) => {
 watch(searchInput, (newValue) => {
   console.log('searchInput updated:', newValue);
 });
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === '/') {
+    event.preventDefault(); // 防止默认行为，如在浏览器中触发查找功能
+    if (searchInputRef.value) {
+      searchInputRef.value.focus();
+      searchInputRef.value.select(); // 全选搜索框内容
+    }
+  }
+};
+
+const handleEnter = () => {
+  emitSearch();
+  if (searchInputRef.value) {
+    searchInputRef.value.blur();
+  }
+};
+
+const handleArrowUp = () => {
+  if (searchHistory.value.length > 0) {
+    if (historyIndex.value < searchHistory.value.length - 1) {
+      historyIndex.value++;
+      searchInput.value = searchHistory.value[searchHistory.value.length - 1 - historyIndex.value];
+    }
+  }
+};
+
+const handleArrowDown = () => {
+  if (searchHistory.value.length > 0) {
+    if (historyIndex.value > 0) {
+      historyIndex.value--;
+      searchInput.value = searchHistory.value[searchHistory.value.length - 1 - historyIndex.value];
+    } else if (historyIndex.value === 0) {
+      historyIndex.value = -1;
+      searchInput.value = '';
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+});
 </script>
 
 <style scoped>
@@ -59,6 +116,7 @@ watch(searchInput, (newValue) => {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center; /* 垂直居中对齐 */
 }
 
 .controls input,
@@ -96,5 +154,9 @@ watch(searchInput, (newValue) => {
   width: 100%;
   height: 100px;
   font-family: monospace;
+}
+
+.search-wrapper {
+  margin-left: auto; /* 将搜索框及其包装元素推到最右边 */
 }
 </style>

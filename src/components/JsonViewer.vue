@@ -92,13 +92,7 @@ const flattenData = (data: JsonData, parentKey = '') => {
 // 更新可见项
 const updateVisibleItems = () => {
   if (!container.value) return;
-  const height = container.value.clientHeight;
-  const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER_SIZE);
-  const endIndex = Math.min(
-    flatData.length,
-    Math.ceil((scrollTop + height) / ITEM_HEIGHT) + BUFFER_SIZE
-  );
-  visibleItems.value = flatData.slice(startIndex, endIndex);
+  visibleItems.value = flatData.filter(e => !e.key.includes('.'));
 };
 
 // 初始化数据
@@ -115,12 +109,6 @@ watch(() => props.jsonData, (newData) => {
 
 onMounted(() => {
   initData();
-  if (container.value) {
-    container.value.addEventListener('scroll', () => {
-      scrollTop = container.value!.scrollTop;
-      requestAnimationFrame(updateVisibleItems);
-    });
-  }
 });
 
 // 工具函数
