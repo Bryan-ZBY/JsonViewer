@@ -10,7 +10,7 @@
 import { ref } from 'vue';
 import Controls from './components/Controls.vue';
 import JsonViewer from './components/JsonViewer.vue';
-import { defaultJson } from './utils/jsonUtils';
+import { defaultJson } from './utils/JsonUtils';
 
 const jsonData = ref<any>(defaultJson); // Initial JSON data
 const jsonViewerRef = ref<InstanceType<typeof JsonViewer> | null>(null);

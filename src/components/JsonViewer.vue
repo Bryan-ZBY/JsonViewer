@@ -1,10 +1,10 @@
 <template>
   <div class="json-container" ref="container">
     <ul>
-      <li v-for="(item, index) in visibleItems" :key="item.key" class="eleli"
-          @click="toggleCollapse($event, item.key)"
-          @mouseenter="showCopyButton($event, item.key)"
-          @mouseleave="hideCopyButton($event, item.key)">
+      <li v-for="item in visibleItems" :key="item.key" class="eleli"
+          @click="toggleCollapse($event, item)"
+          @mouseenter="showCopyButton($event, item)"
+          @mouseleave="hideCopyButton($event, item)">
         <span class="json-key">{{ item.key }}: </span>
         <template v-if="item.isObjectOrArray">
           <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
@@ -12,7 +12,7 @@
           </span>
           <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
           <button class="copy-button" v-show="item.showCopy"
-                  @click.stop="copyToClipboard(item.value, item.key)">Copy</button>
+            @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           <div v-show="item.isCollapsed" class="nested-container">
             <JsonViewer :json-data="item.value" ref="childViewer" />
           </div>
@@ -20,7 +20,7 @@
         <template v-else>
           <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
           <button class="copy-button" v-show="item.showCopy"
-                  @click.stop="copyToClipboard(item.value, item.key)">Copy</button>
+            @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
         </template>
       </li>
     </ul>
@@ -29,8 +29,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, defineProps, defineExpose, nextTick, watch } from 'vue';
-import { JsonData } from '../types/json';
-import { generateSummary } from '../utils/jsonUtils';
+import { JsonData } from '../types/JsonData';
+import { FlattenedItem } from '../types/FlattenedItem';
+import { generateUUID } from '../utils/UUIDUtils';
+import { generateSummary } from '../utils/JsonUtils';
 
 const props = defineProps<{
   jsonData: JsonData;
@@ -39,6 +41,7 @@ const props = defineProps<{
 const container = ref<HTMLElement | null>(null);
 const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
 const visibleItems = ref<any[]>([]);
+const copyData = ref<string>("Copy");
 
 let state: Record<string, { collapsed: boolean; showCopy: boolean }> = {};
 let flatData: any[] = [];
@@ -55,24 +58,26 @@ const ensureState = (key: string) => {
 };
 
 // 扁平化数据
-const flattenData = (data: JsonData, parentKey = '') => {
-  const result = [];
+const flattenData = (data: JsonData, parentKey = ''): FlattenedItem[] => {
+  const result: FlattenedItem[] = [];
   for (const key in data) {
     const fullKey = parentKey ? `${parentKey}.${key}` : key;
     const value = data[key];
     const isObjectOrArray = typeof value === 'object' && value !== null;
 
     ensureState(fullKey);
+    const uuid = generateUUID()
 
-    const item = {
+    const item: FlattenedItem = {
       key: fullKey,
       value,
+      uuid,
       isObjectOrArray,
       isCollapsed: state[fullKey].collapsed,
       showCopy: state[fullKey].showCopy,
       summary: isObjectOrArray ? generateSummary(value) : '',
       valueClass: isObjectOrArray ? '' : getValueClass(value),
-      highlightedValue: ''
+      highlightedValue: '',
     };
 
     if (!isObjectOrArray && currentSearchText) {
@@ -121,37 +126,45 @@ const getValueClass = (value: any): string => {
   }
 };
 
-const toggleCollapse = (event: Event, key: string) => {
+// 点击
+const toggleCollapse = (event: Event, item:any) => {
   event.stopPropagation();
-  if ((event.target as HTMLElement).classList.contains('copy-button')) return;
+  const key = item.key;
   ensureState(key);
+  item.showCopy = true;
   state[key].collapsed = !state[key].collapsed;
   flatData = flattenData(props.jsonData);
   updateVisibleItems();
 };
 
-const showCopyButton = (event: Event, key: string) => {
+// 移入
+const showCopyButton = (event: Event, item:any) => {
   event.stopPropagation();
-  ensureState(key);
+  const key = item.key;
   state[key].showCopy = true;
-  updateVisibleItems();
-};
-
-const hideCopyButton = (event: Event, key: string) => {
-  event.stopPropagation();
+  item.showCopy = true;
+  copyData.value = "Copy";
   ensureState(key);
-  state[key].showCopy = false;
   updateVisibleItems();
 };
 
+// 移出
+const hideCopyButton = (event: Event, item:any) => {
+  event.stopPropagation();
+  const key = item.key;
+  state[key].showCopy = false;
+  item.showCopy = false;
+  copyData.value = "Copy";
+  ensureState(key);
+  updateVisibleItems();
+};
+
+// 复制功能
 const copyToClipboard = (value: any, key: string) => {
   const text = JSON.stringify(value, null, 2);
   navigator.clipboard.writeText(text).then(() => {
-    const button = document.querySelector(`li .copy-button`) as HTMLButtonElement;
-    if (button) {
-      button.textContent = 'Copied!';
-      setTimeout(() => (button.textContent = 'Copy'), 1500);
-    }
+      copyData.value = 'Copy succeeded!';
+      setTimeout(() => (copyData.value = 'Copy'), 1500);
   });
 };
 
