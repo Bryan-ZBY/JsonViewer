@@ -2,7 +2,7 @@
   <div>
     <Controls @render-json="renderJson" @search="performSearch" @collapse-all="collapseAll" @toggle-dark-mode="toggleDarkMode" />
     <JsonViewer :json-data="jsonData" ref="jsonViewerRef" />
-    <button id="back-to-top" class="fixed-button" @click="scrollToTop">Back to Top</button>
+    <button id="back-to-top" class="fixed-button" @click="scrollToTop">回到顶部</button>
   </div>
 </template>
 
