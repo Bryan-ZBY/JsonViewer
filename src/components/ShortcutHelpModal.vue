@@ -40,6 +40,8 @@ const shortcuts = ref([
   { key: 'u', description: '屏幕上移半页' },
   { key: 'g', description: '到顶部' },
   { key: 'G', description: '到底部' },
+  { key: 'n', description: '下一个匹配项' },
+  { key: 'N', description: '上一个匹配项' },
 ])
 </script>
 

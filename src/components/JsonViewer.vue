@@ -5,12 +5,14 @@
         @click="selectItem(index, $event, item)"
         @mouseenter="showCopyButton($event, item)">
         <template v-if="item.isObjectOrArray">
-          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }">
+          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
             <span class="json-key" v-html="item.highlightedKeyValue"></span>
+            <!-- <span class="json-key" >{{item.key}}: </span> -->
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
             </span>
             <span class="summary" v-show="!item.isCollapsed" v-html="item.highlightedSummaryValue"></span>
+            <!-- <span class="summary" v-show="!item.isCollapsed">{{item.summary}}</span> -->
             <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </div>
@@ -99,8 +101,8 @@ const flattenData = (data: JsonData): FlattenedItem[] => {
 
       const keyValueStr = key;
       item.highlightedKeyValue = applyHighlight(keyValueStr, currentSearchText) + ": ";
-    }else{
-      const summaryValueStr = summary;
+    }else if(currentSearchText){
+      const summaryValueStr = summary.slice(0,200);
       item.highlightedSummaryValue = applyHighlight(summaryValueStr, currentSearchText);
     }
 
@@ -379,12 +381,15 @@ ul {
 .eleli {
   cursor: pointer;
   user-select: none;
-  max-width: calc(100% - 10px);
-  overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 20px;
   margin: 0;
   padding: 0;
+}
+
+.eleli div {
+  max-width: calc(100% - 50px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nested-container {
