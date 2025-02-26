@@ -5,6 +5,7 @@
       <button @click="emit('toggle-dark-mode')">主题</button>
       <textarea v-model="jsonInput" ref="jsonInputRef" placeholder="输入完 Json 数据后, 点击下面的加载按钮" class="json-input" @focus="logFocus"></textarea>
       <button @click="emitRenderJson">加载</button>
+      <button @click="clearJsonInput">清空</button>
       <button @click="emit('collapse-all')">收起</button>
       <div class="search-wrapper">
         <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="/: Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
@@ -46,6 +47,10 @@ const emitRenderJson = () => {
     console.error('JSON Parse Error:', error);
     alert(`Invalid JSON! Error: ${error.message}`);
   }
+};
+
+const clearJsonInput = () => {
+  jsonInput.value = '{}';
 };
 
 const emitSearch = () => {

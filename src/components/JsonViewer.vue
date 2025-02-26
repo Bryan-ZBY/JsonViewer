@@ -1,27 +1,32 @@
 <template>
-  <div class="json-container" ref="container" tabindex="0" @keydown="handleKeydown">
+  <div class="json-container" ref="container" tabindex="0" @keydown="handleKeyDown">
     <ul>
       <li v-for="(item, index) in visibleItems" :key="item.key" class="eleli"
-          :class="{ 'selected': selectedIndex === index }"
-          @click="selectItem(index, $event, item)"
-          @mouseenter="showCopyButton($event, item)"
-          @mouseleave="hideCopyButton($event, item)">
-        <span class="json-key">{{ item.key }}: </span>
+        @click="selectItem(index, $event, item)"
+        @mouseenter="showCopyButton($event, item)"
+        @mouseleave="hideCopyButton($event, item)">
         <template v-if="item.isObjectOrArray">
-          <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
-            {{ Array.isArray(item.value) ? '[' : '{' }}
-          </span>
-          <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
-          <button class="copy-button" v-show="item.showCopy"
-            @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+          <div :class="{ 'selected': selectedKey === item.uuid }" >
+            <span class="json-key">{{ item.key }}: </span>
+            <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
+              {{ Array.isArray(item.value) ? '[' : '{' }}
+            </span>
+            <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
+            <button class="copy-button" v-show="item.showCopy"
+              @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+
+          </div>
           <div v-show="item.isCollapsed" class="nested-container">
             <JsonViewer :json-data="item.value" ref="childViewer" />
           </div>
         </template>
         <template v-else>
-          <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
-          <button class="copy-button" v-show="item.showCopy"
-            @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+          <div :class="{ 'selected': selectedKey === item.uuid }" >
+            <span class="json-key">{{ item.key }}: </span>
+            <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
+            <button class="copy-button" v-show="item.showCopy"
+              @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+          </div>
         </template>
       </li>
     </ul>
@@ -29,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineProps, defineExpose, nextTick, watch } from 'vue';
+import { ref, onMounted, onUnmounted, defineProps, defineExpose, nextTick, watch } from 'vue';
 import { JsonData } from '../types/JsonData';
 import { FlattenedItem } from '../types/FlattenedItem';
 import { generateUUID } from '../utils/UUIDUtils';
@@ -44,6 +49,7 @@ const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
 const visibleItems = ref<any[]>([]);
 const copyData = ref<string>("Copy");
 const selectedIndex = ref<number>(-1); // 跟踪当前选中项的索引
+const selectedKey = ref<string>(""); // 跟踪当前选中项的索引
 
 let state: Record<string, { collapsed: boolean; showCopy: boolean }> = {};
 let flatData: any[] = [];
@@ -119,19 +125,22 @@ const selectItem = (index: number, event: Event, item: any) => {
 };
 
 // 键盘事件处理
-const handleKeydown = (event: KeyboardEvent) => {
+const handleKeyDown = (event: KeyboardEvent) => {
   event.preventDefault(); // 阻止默认行为（如页面滚动）
 
   switch (event.key) {
     case 'j': // 向下移动
       if (selectedIndex.value < visibleItems.value.length - 1) {
         selectedIndex.value++;
+        selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
+
         scrollToSelected();
       }
       break;
     case 'k': // 向上移动
       if (selectedIndex.value > 0) {
         selectedIndex.value--;
+        selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
         scrollToSelected();
       }
       break;
@@ -168,6 +177,7 @@ const collapseToParent = () => {
       flatData = flattenData(props.jsonData);
       updateVisibleItems();
       selectedIndex.value = parentIndex;
+      selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
       scrollToSelected();
     }
   }
