@@ -1,6 +1,6 @@
 export function scrollTo(isToTop: boolean) {
     // 动画持续时间（毫秒），适当增加持续时间
-    const duration = 60; 
+    const duration = 200; 
     // 获取当前窗口的高度
     const windowHeight = window.innerHeight;
     // 获取当前页面的滚动位置

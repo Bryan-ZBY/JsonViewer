@@ -3,9 +3,10 @@
     <div class="controls">
       <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
       <button @click="emit('toggle-dark-mode')">主题</button>
-      <textarea v-model="jsonInput" ref="jsonInputRef" placeholder="输入完 Json 数据后, 点击下面的加载按钮" class="json-input" @focus="logFocus"></textarea>
+      <textarea v-model="jsonInput" ref="jsonInputRef" :placeholder="textareaPlaceholder" class="json-input" @focus="logFocus"></textarea>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearJsonInput">清空</button>
+      <button @click="doFetch">请求数据</button>
       <button @click="emit('collapse-all')">收起</button>
       <div class="search-wrapper">
         <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="/: Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
@@ -22,6 +23,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import { scrollTo, scrollOver } from '../utils/ScrollUtils.ts';
 
+
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
   (e: 'search', searchText: string): void;
@@ -37,6 +39,10 @@ const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
 
+const textareaPlaceholder = ref(`JSON: 输入完 Json 数据后, 点击下面的加载按钮
+Fetch: // 示例代码 fetch('https://jsonplaceholder.typicode.com/posts');
+`);
+
 const emitRenderJson = () => {
   const cleanedInput = jsonInput.value.trim();
   try {
@@ -50,7 +56,32 @@ const emitRenderJson = () => {
 };
 
 const clearJsonInput = () => {
-  jsonInput.value = '{}';
+  jsonInput.value = '';
+};
+
+const doFetch = async () => {
+  if(!jsonInput.value){
+    jsonInput.value = `fetch('https://jsonplaceholder.typicode.com/posts');`;
+  }
+
+  let code = jsonInput.value.trim();
+  console.log(code)
+
+  if (code.endsWith(';')) { code = code.slice(0, -1); }
+  code = 'return ' + code + `.then(response => response.json());`;
+
+  try {
+    const func = new Function(code);
+    const result = await func();
+    if (result instanceof Promise) {
+      const finalResult = await result;
+      emit('render-json', finalResult);
+    } else {
+      emit('render-json', result);
+    }
+  } catch (error: any) {
+    jsonInput.value = `执行出错: ${error.message}`;
+  }
 };
 
 const emitSearch = () => {
