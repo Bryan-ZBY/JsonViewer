@@ -6,7 +6,7 @@
         @mouseenter="showCopyButton($event, item)"
         @mouseleave="hideCopyButton($event, item)">
         <template v-if="item.isObjectOrArray">
-          <div :class="{ 'selected': selectedKey === item.uuid }">
+          <div :class="{ 'selected': selectedKey === item.fullKey }">
             <span class="json-key">{{ item.key }}: </span>
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
@@ -16,11 +16,11 @@
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </div>
           <div v-show="item.isCollapsed" class="nested-container">
-            <JsonViewer :json-data="item.value" ref="childViewer" @child-copy-shown="handleChildCopyShown" />
+            <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" @child-copy-shown="handleChildCopyShown" />
           </div>
         </template>
         <template v-else>
-          <div :class="{ 'selected': selectedKey === item.uuid }">
+          <div :class="{ 'selected': selectedKey === item.fullKey }">
             <span class="json-key">{{ item.key }}: </span>
             <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
             <button class="copy-button" v-show="item.showCopy && !childCopyActive"
@@ -41,6 +41,7 @@ import { generateSummary } from '../utils/JsonUtils';
 
 const props = defineProps<{
   jsonData: JsonData;
+  parentKey: '';
 }>();
 
 const emit = defineEmits(['child-copy-shown']); // Define custom event
@@ -66,23 +67,24 @@ const ensureState = (key: string) => {
   }
 };
 
-const flattenData = (data: JsonData, parentKey = ''): FlattenedItem[] => {
+const flattenData = (data: JsonData): FlattenedItem[] => {
   const result: FlattenedItem[] = [];
   for (const key in data) {
-    const fullKey = parentKey ? `${parentKey}.${key}` : key;
+    const fullKey = props.parentKey ? `${props.parentKey}.${key}` : key;
     const value = data[key];
     const isObjectOrArray = typeof value === 'object' && value !== null;
 
-    ensureState(fullKey);
+    ensureState(key);
     const uuid = generateUUID();
 
     const item: FlattenedItem = {
-      key: fullKey,
+      key,
+      fullKey,
       value,
       uuid,
       isObjectOrArray,
-      isCollapsed: state[fullKey].collapsed,
-      showCopy: state[fullKey].showCopy,
+      isCollapsed: state[key].collapsed,
+      showCopy: state[key].showCopy,
       summary: isObjectOrArray ? generateSummary(value) : '',
       valueClass: isObjectOrArray ? '' : getValueClass(value),
       highlightedValue: '',
@@ -119,42 +121,35 @@ const selectItem = (index: number, event: Event, item: any) => {
 };
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  event.preventDefault();
   switch (event.key) {
     case 'j':
+      event.preventDefault();
       if (selectedIndex.value < visibleItems.value.length - 1) {
         selectedIndex.value++;
-        selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
-        scrollToSelected();
+        selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
       }
       break;
     case 'k':
+      event.preventDefault();
       if (selectedIndex.value > 0) {
         selectedIndex.value--;
-        selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
-        scrollToSelected();
+        selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
       }
       break;
     case 'h':
+      event.preventDefault();
       collapseToParent();
       break;
     case 'l':
+      event.preventDefault();
       expandToChild();
       break;
     case 'y':
+      event.preventDefault();
       const item = visibleItems.value[selectedIndex.value];
       item.showCopy = true;
       copyToClipboard(item.value, item.key);
       break;
-  }
-};
-
-const scrollToSelected = () => {
-  const containerEl = container.value;
-  if (!containerEl) return;
-  const selectedEl = containerEl.querySelectorAll('.eleli')[selectedIndex.value];
-  if (selectedEl) {
-    selectedEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 };
 
@@ -166,7 +161,6 @@ const collapseToParent = () => {
     state[currentItem.key].collapsed = false;
     flatData = flattenData(props.jsonData);
     updateVisibleItems();
-    scrollToSelected();
   }
 };
 
@@ -177,7 +171,6 @@ const expandToChild = () => {
   state[currentItem.key].collapsed = !state[currentItem.key].collapsed;
   flatData = flattenData(props.jsonData);
   updateVisibleItems();
-  scrollToSelected();
 };
 
 const getValueClass = (value: any): string => {
@@ -191,6 +184,8 @@ const getValueClass = (value: any): string => {
 
 const toggleCollapse = (event: Event, item: any) => {
   event.stopPropagation();
+  selectedKey.value = item.fullKey;
+  console.log(item, selectedKey.value)
   const key = item.key;
   ensureState(key);
   item.showCopy = true;
