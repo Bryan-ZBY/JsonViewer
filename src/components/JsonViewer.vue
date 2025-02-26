@@ -6,25 +6,24 @@
         @mouseenter="showCopyButton($event, item)"
         @mouseleave="hideCopyButton($event, item)">
         <template v-if="item.isObjectOrArray">
-          <div :class="{ 'selected': selectedKey === item.uuid }" >
+          <div :class="{ 'selected': selectedKey === item.uuid }">
             <span class="json-key">{{ item.key }}: </span>
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
             </span>
             <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
-            <button class="copy-button" v-show="item.showCopy"
+            <button class="copy-button" v-show="item.showCopy && !childCopyActive"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
-
           </div>
           <div v-show="item.isCollapsed" class="nested-container">
-            <JsonViewer :json-data="item.value" ref="childViewer" />
+            <JsonViewer :json-data="item.value" ref="childViewer" @child-copy-shown="handleChildCopyShown" />
           </div>
         </template>
         <template v-else>
-          <div :class="{ 'selected': selectedKey === item.uuid }" >
+          <div :class="{ 'selected': selectedKey === item.uuid }">
             <span class="json-key">{{ item.key }}: </span>
             <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
-            <button class="copy-button" v-show="item.showCopy"
+            <button class="copy-button" v-show="item.showCopy && !childCopyActive"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </div>
         </template>
@@ -44,12 +43,15 @@ const props = defineProps<{
   jsonData: JsonData;
 }>();
 
+const emit = defineEmits(['child-copy-shown']); // Define custom event
+
 const container = ref<HTMLElement | null>(null);
 const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
 const visibleItems = ref<any[]>([]);
 const copyData = ref<string>("Copy");
-const selectedIndex = ref<number>(-1); // 跟踪当前选中项的索引
-const selectedKey = ref<string>(""); // 跟踪当前选中项的索引
+const selectedIndex = ref<number>(-1);
+const selectedKey = ref<string>("");
+const childCopyActive = ref<boolean>(false); // New reactive property to track child copy button state
 
 let state: Record<string, { collapsed: boolean; showCopy: boolean }> = {};
 let flatData: any[] = [];
@@ -58,14 +60,12 @@ const ITEM_HEIGHT = 21;
 const BUFFER_SIZE = 10;
 let currentSearchText = '';
 
-// 初始化state
 const ensureState = (key: string) => {
   if (!state[key]) {
     state[key] = { collapsed: false, showCopy: false };
   }
 };
 
-// 扁平化数据（仅顶层）
 const flattenData = (data: JsonData, parentKey = ''): FlattenedItem[] => {
   const result: FlattenedItem[] = [];
   for (const key in data) {
@@ -94,60 +94,51 @@ const flattenData = (data: JsonData, parentKey = ''): FlattenedItem[] => {
     }
 
     result.push(item);
-
-    // 子节点由嵌套的 JsonViewer 处理，不在顶层展开
   }
   return result;
 };
 
-// 更新可见项（仅顶层）
 const updateVisibleItems = () => {
   if (!container.value) return;
   visibleItems.value = flatData.filter(e => !e.key.includes('.'));
 };
 
-// 初始化数据
 const initData = () => {
   flatData = flattenData(props.jsonData);
   updateVisibleItems();
 };
 
-// 监听 props.jsonData 的变化
 watch(() => props.jsonData, (newData) => {
-  state = {}; // 重置状态，避免旧数据干扰
-  initData(); // 重新初始化数据
+  state = {};
+  initData();
 }, { deep: true });
 
-// 点击选择项并触发展开/收缩
 const selectItem = (index: number, event: Event, item: any) => {
   selectedIndex.value = index;
   toggleCollapse(event, item);
 };
 
-// 键盘事件处理
 const handleKeyDown = (event: KeyboardEvent) => {
-  event.preventDefault(); // 阻止默认行为（如页面滚动）
-
+  event.preventDefault();
   switch (event.key) {
-    case 'j': // 向下移动
+    case 'j':
       if (selectedIndex.value < visibleItems.value.length - 1) {
         selectedIndex.value++;
         selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
-
         scrollToSelected();
       }
       break;
-    case 'k': // 向上移动
+    case 'k':
       if (selectedIndex.value > 0) {
         selectedIndex.value--;
         selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
         scrollToSelected();
       }
       break;
-    case 'h': // 收缩到父节点
+    case 'h':
       collapseToParent();
       break;
-    case 'l': // 展开并进入子节点
+    case 'l':
       expandToChild();
       break;
     case 'y':
@@ -158,7 +149,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
 };
 
-// 滚动到选中的项
 const scrollToSelected = () => {
   const containerEl = container.value;
   if (!containerEl) return;
@@ -168,45 +158,28 @@ const scrollToSelected = () => {
   }
 };
 
-// 收缩到父节点
 const collapseToParent = () => {
   const currentItem = visibleItems.value[selectedIndex.value];
   if (!currentItem) return;
 
   if (state[currentItem.key].collapsed) {
-    state[currentItem.key].collapsed = false; // 展开当前节点
+    state[currentItem.key].collapsed = false;
     flatData = flattenData(props.jsonData);
     updateVisibleItems();
     scrollToSelected();
   }
-
-  // const keyParts = currentItem.key.split('.');
-  // if (keyParts.length > 1) {
-  //   const parentKey = keyParts.slice(0, -1).join('.');
-  //   const parentIndex = visibleItems.value.findIndex(item => item.key === parentKey);
-  //   if (parentIndex !== -1) {
-  //     state[parentKey].collapsed = false; // 收缩父节点
-  //     flatData = flattenData(props.jsonData);
-  //     updateVisibleItems();
-  //     selectedIndex.value = parentIndex;
-  //     selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
-  //     scrollToSelected();
-  //   }
-  // }
 };
 
-// 展开并进入子节点（仅切换展开状态）
 const expandToChild = () => {
   const currentItem = visibleItems.value[selectedIndex.value];
   if (!currentItem || !currentItem.isObjectOrArray) return;
 
-  state[currentItem.key].collapsed = !state[currentItem.key].collapsed; // 展开当前节点
+  state[currentItem.key].collapsed = !state[currentItem.key].collapsed;
   flatData = flattenData(props.jsonData);
   updateVisibleItems();
   scrollToSelected();
 };
 
-// 工具函数
 const getValueClass = (value: any): string => {
   switch (typeof value) {
     case 'string': return 'json-string';
@@ -216,7 +189,6 @@ const getValueClass = (value: any): string => {
   }
 };
 
-// 点击展开/收缩
 const toggleCollapse = (event: Event, item: any) => {
   event.stopPropagation();
   const key = item.key;
@@ -227,7 +199,6 @@ const toggleCollapse = (event: Event, item: any) => {
   updateVisibleItems();
 };
 
-// 移入显示复制按钮
 const showCopyButton = (event: Event, item: any) => {
   event.stopPropagation();
   const key = item.key;
@@ -236,9 +207,9 @@ const showCopyButton = (event: Event, item: any) => {
   copyData.value = "Copy";
   ensureState(key);
   updateVisibleItems();
+  emit('child-copy-shown', true); // Emit event to parent
 };
 
-// 移出隐藏复制按钮
 const hideCopyButton = (event: Event, item: any) => {
   event.stopPropagation();
   const key = item.key;
@@ -247,9 +218,14 @@ const hideCopyButton = (event: Event, item: any) => {
   copyData.value = "Copy";
   ensureState(key);
   updateVisibleItems();
+  emit('child-copy-shown', false); // Emit event to parent
 };
 
-// 复制功能
+// Handler for child copy button visibility
+const handleChildCopyShown = (isShown: boolean) => {
+  childCopyActive.value = isShown;
+};
+
 const copyToClipboard = (value: any, key: string) => {
   const text = JSON.stringify(value, null, 2);
   navigator.clipboard.writeText(text).then(() => {
@@ -258,13 +234,11 @@ const copyToClipboard = (value: any, key: string) => {
   });
 };
 
-// 高亮辅助函数
 const applyHighlight = (text: string, searchText: string) => {
   const regex = new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
   return text.replace(regex, '<span class="highlight">$1</span>');
 };
 
-// 搜索函数
 const performSearch = (searchText: string) => {
   if (!searchText || !props.jsonData) {
     currentSearchText = '';
@@ -325,18 +299,19 @@ const collapseAll = () => {
 
 onMounted(() => {
   initData();
-  container.value?.focus(); // 确保容器可聚焦以接收键盘事件
+  container.value?.focus();
 });
 
 defineExpose({ performSearch, collapseAll });
 </script>
 
 <style scoped>
+/* No changes needed in styles */
 .json-container {
   font-family: monospace;
   white-space: pre;
   overflow-y: auto;
-  outline: none; /* 移除默认聚焦边框 */
+  outline: none;
 }
 
 ul {
@@ -463,10 +438,10 @@ ul {
 }
 
 .selected {
-  background-color: #e0e0e0; /* 浅灰色高亮 */
+  background-color: #e0e0e0;
 }
 
 .dark-mode .selected {
-  background-color: #444; /* 深色模式下的高亮 */
+  background-color: #444;
 }
 </style>
