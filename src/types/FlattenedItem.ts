@@ -6,8 +6,9 @@ export interface FlattenedItem {
   uuid: string;
   isObjectOrArray: boolean;
   isCollapsed: boolean;
-  showCopy: boolean;
   summary: string;
   valueClass: string;
   highlightedValue: string;
+  highlightedKeyValue: string;
+  highlightedSummaryValue: string;
 }

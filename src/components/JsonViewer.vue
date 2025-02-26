@@ -3,27 +3,26 @@
     <ul>
       <li v-for="(item, index) in visibleItems" :key="item.key" class="eleli"
         @click="selectItem(index, $event, item)"
-        @mouseenter="showCopyButton($event, item)"
-        @mouseleave="hideCopyButton($event, item)">
+        @mouseenter="showCopyButton($event, item)">
         <template v-if="item.isObjectOrArray">
-          <div :class="{ 'selected': selectedKey === item.fullKey }">
-            <span class="json-key">{{ item.key }}: </span>
+          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }">
+            <span class="json-key" v-html="item.highlightedKeyValue"></span>
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
             </span>
-            <span class="summary" v-show="!item.isCollapsed">{{ item.summary }}</span>
-            <button class="copy-button" v-show="item.showCopy && !childCopyActive"
+            <span class="summary" v-show="!item.isCollapsed" v-html="item.highlightedSummaryValue"></span>
+            <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </div>
           <div v-show="item.isCollapsed" class="nested-container">
-            <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" @child-copy-shown="handleChildCopyShown" />
+            <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" />
           </div>
         </template>
         <template v-else>
-          <div :class="{ 'selected': selectedKey === item.fullKey }">
-            <span class="json-key">{{ item.key }}: </span>
+          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }">
+            <span class="json-key" v-html="item.highlightedKeyValue"></span>
             <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
-            <button class="copy-button" v-show="item.showCopy && !childCopyActive"
+            <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </div>
         </template>
@@ -38,13 +37,15 @@ import { JsonData } from '../types/JsonData';
 import { FlattenedItem } from '../types/FlattenedItem';
 import { generateUUID } from '../utils/UUIDUtils';
 import { generateSummary } from '../utils/JsonUtils';
+import { useDataStore } from '../store/GlobalData';
 
 const props = defineProps<{
   jsonData: JsonData;
   parentKey: '';
 }>();
 
-const emit = defineEmits(['child-copy-shown']); // Define custom event
+// 通过 useGlobalDataStore 函数获取 globalData 这个 store 的实例
+const globalDataStore = useDataStore();
 
 const container = ref<HTMLElement | null>(null);
 const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
@@ -54,7 +55,7 @@ const selectedIndex = ref<number>(-1);
 const selectedKey = ref<string>("");
 const childCopyActive = ref<boolean>(false); // New reactive property to track child copy button state
 
-let state: Record<string, { collapsed: boolean; showCopy: boolean }> = {};
+let state: Record<string, { collapsed: boolean; }> = {};
 let flatData: any[] = [];
 let scrollTop = 0;
 const ITEM_HEIGHT = 21;
@@ -63,16 +64,17 @@ let currentSearchText = '';
 
 const ensureState = (key: string) => {
   if (!state[key]) {
-    state[key] = { collapsed: false, showCopy: false };
+    state[key] = { collapsed: false };
   }
 };
 
 const flattenData = (data: JsonData): FlattenedItem[] => {
   const result: FlattenedItem[] = [];
   for (const key in data) {
-    const fullKey = props.parentKey ? `${props.parentKey}.${key}` : key;
+    const fullKey:string = props.parentKey ? `${props.parentKey}.${key}` : key;
     const value = data[key];
     const isObjectOrArray = typeof value === 'object' && value !== null;
+    const summary = isObjectOrArray ? generateSummary(value) : '';
 
     ensureState(key);
     const uuid = generateUUID();
@@ -84,15 +86,22 @@ const flattenData = (data: JsonData): FlattenedItem[] => {
       uuid,
       isObjectOrArray,
       isCollapsed: state[key].collapsed,
-      showCopy: state[key].showCopy,
-      summary: isObjectOrArray ? generateSummary(value) : '',
+      summary,
       valueClass: isObjectOrArray ? '' : getValueClass(value),
       highlightedValue: '',
+      highlightedKeyValue: key + ": ",
+      highlightedSummaryValue: summary,
     };
 
     if (!isObjectOrArray && currentSearchText) {
       const valueStr = JSON.stringify(value);
       item.highlightedValue = applyHighlight(valueStr, currentSearchText);
+
+      const keyValueStr = key;
+      item.highlightedKeyValue = applyHighlight(keyValueStr, currentSearchText) + ": ";
+    }else{
+      const summaryValueStr = summary;
+      item.highlightedSummaryValue = applyHighlight(summaryValueStr, currentSearchText);
     }
 
     result.push(item);
@@ -127,6 +136,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       if (selectedIndex.value < visibleItems.value.length - 1) {
         selectedIndex.value++;
         selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
+        globalDataStore.updateSelectedKey(selectedKey.value);
       }
       break;
     case 'k':
@@ -134,6 +144,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       if (selectedIndex.value > 0) {
         selectedIndex.value--;
         selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
+        globalDataStore.updateSelectedKey(selectedKey.value);
       }
       break;
     case 'h':
@@ -147,7 +158,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case 'y':
       event.preventDefault();
       const item = visibleItems.value[selectedIndex.value];
-      item.showCopy = true;
+      globalDataStore.updateCopyKey(item.fullKey);
       copyToClipboard(item.value, item.key);
       break;
   }
@@ -184,11 +195,12 @@ const getValueClass = (value: any): string => {
 
 const toggleCollapse = (event: Event, item: any) => {
   event.stopPropagation();
-  selectedKey.value = item.fullKey;
-  console.log(item, selectedKey.value)
+
+  globalDataStore.updateSelectedKey(item.fullKey);
   const key = item.key;
   ensureState(key);
-  item.showCopy = true;
+
+  globalDataStore.updateCopyKey(item.fullKey);
   state[key].collapsed = !state[key].collapsed;
   flatData = flattenData(props.jsonData);
   updateVisibleItems();
@@ -197,28 +209,10 @@ const toggleCollapse = (event: Event, item: any) => {
 const showCopyButton = (event: Event, item: any) => {
   event.stopPropagation();
   const key = item.key;
-  state[key].showCopy = true;
-  item.showCopy = true;
+  globalDataStore.updateCopyKey(item.fullKey);
   copyData.value = "Copy";
   ensureState(key);
   updateVisibleItems();
-  emit('child-copy-shown', true); // Emit event to parent
-};
-
-const hideCopyButton = (event: Event, item: any) => {
-  event.stopPropagation();
-  const key = item.key;
-  state[key].showCopy = false;
-  item.showCopy = false;
-  copyData.value = "Copy";
-  ensureState(key);
-  updateVisibleItems();
-  emit('child-copy-shown', false); // Emit event to parent
-};
-
-// Handler for child copy button visibility
-const handleChildCopyShown = (isShown: boolean) => {
-  childCopyActive.value = isShown;
 };
 
 const copyToClipboard = (value: any, key: string) => {
