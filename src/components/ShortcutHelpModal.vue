@@ -31,6 +31,7 @@ const shortcuts = ref([
   { key: '?', description: '帮助' },
   { key: '/', description: '聚焦搜索框' },
   { key: 'Esc', description: '取消搜索框和输入框聚焦' },
+  { key: 'y', description: '复制' },
   { key: 'j', description: '高亮行下移' },
   { key: 'k', description: '高亮行上移' },
   { key: 'h', description: '收起到父节点' },

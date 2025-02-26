@@ -150,6 +150,11 @@ const handleKeyDown = (event: KeyboardEvent) => {
     case 'l': // 展开并进入子节点
       expandToChild();
       break;
+    case 'y':
+      const item = visibleItems.value[selectedIndex.value];
+      item.showCopy = true;
+      copyToClipboard(item.value, item.key);
+      break;
   }
 };
 
@@ -168,19 +173,26 @@ const collapseToParent = () => {
   const currentItem = visibleItems.value[selectedIndex.value];
   if (!currentItem) return;
 
-  const keyParts = currentItem.key.split('.');
-  if (keyParts.length > 1) {
-    const parentKey = keyParts.slice(0, -1).join('.');
-    const parentIndex = visibleItems.value.findIndex(item => item.key === parentKey);
-    if (parentIndex !== -1) {
-      state[parentKey].collapsed = false; // 收缩父节点
-      flatData = flattenData(props.jsonData);
-      updateVisibleItems();
-      selectedIndex.value = parentIndex;
-      selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
-      scrollToSelected();
-    }
+  if (state[currentItem.key].collapsed) {
+    state[currentItem.key].collapsed = false; // 展开当前节点
+    flatData = flattenData(props.jsonData);
+    updateVisibleItems();
+    scrollToSelected();
   }
+
+  // const keyParts = currentItem.key.split('.');
+  // if (keyParts.length > 1) {
+  //   const parentKey = keyParts.slice(0, -1).join('.');
+  //   const parentIndex = visibleItems.value.findIndex(item => item.key === parentKey);
+  //   if (parentIndex !== -1) {
+  //     state[parentKey].collapsed = false; // 收缩父节点
+  //     flatData = flattenData(props.jsonData);
+  //     updateVisibleItems();
+  //     selectedIndex.value = parentIndex;
+  //     selectedKey.value = visibleItems.value[selectedIndex.value].uuid;
+  //     scrollToSelected();
+  //   }
+  // }
 };
 
 // 展开并进入子节点（仅切换展开状态）
@@ -188,12 +200,10 @@ const expandToChild = () => {
   const currentItem = visibleItems.value[selectedIndex.value];
   if (!currentItem || !currentItem.isObjectOrArray) return;
 
-  if (!state[currentItem.key].collapsed) {
-    state[currentItem.key].collapsed = true; // 展开当前节点
-    flatData = flattenData(props.jsonData);
-    updateVisibleItems();
-    scrollToSelected();
-  }
+  state[currentItem.key].collapsed = !state[currentItem.key].collapsed; // 展开当前节点
+  flatData = flattenData(props.jsonData);
+  updateVisibleItems();
+  scrollToSelected();
 };
 
 // 工具函数
@@ -405,10 +415,10 @@ ul {
 .eleli {
   cursor: pointer;
   user-select: none;
-  max-width: calc(100% - 50px);
+  max-width: calc(100% - 10px);
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 21px;
+  line-height: 20px;
   margin: 0;
   padding: 0;
 }

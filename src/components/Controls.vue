@@ -137,7 +137,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     showHelpModal.value = true; // 打开帮助模态框
   }
 
-  if (event.key === '/') {
+  if (event.key === '/' || event.key === 'f') {
     event.preventDefault(); // 防止默认行为，如在浏览器中触发查找功能
     if (searchInputRef.value) {
       searchInputRef.value.focus();
