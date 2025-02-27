@@ -53,3 +53,9 @@ div .ͼo {
 .cm-scroller::-webkit-scrollbar-corner {
   background-color: #282c34;
 }
+.ͼ1 .cm-vim-panel input {
+    border: none;
+    outline: none;
+    background-color: inherit;
+    color: #f5eeb3;
+}

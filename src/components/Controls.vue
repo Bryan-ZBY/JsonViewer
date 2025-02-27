@@ -3,14 +3,14 @@
     <div class="controls">
       <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
       <button @click="emit('toggle-dark-mode')">主题</button>
-      <!-- <textarea v-model="jsonInput" ref="jsonInputRef" :placeholder="textareaPlaceholder" class="json-input" @focus="logFocus"></textarea> -->
-      <JsonEditor />
+      <!-- <textarea v-model="jsonInput" ref="jsonInputRef" @focus="logFocus"></textarea> -->
+      <JsonEditor ref="jsonInputRef"/>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearJsonInput">清空</button>
       <button @click="doFetch">请求数据</button>
       <button @click="emit('collapse-all')">收起</button>
       <div class="search-wrapper">
-        <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="/: Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
+        <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
       </div>
     </div>
 
@@ -23,9 +23,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
-import { scrollTo, scrollOver } from '../utils/ScrollUtils.ts';
+import { scrollTo } from '../utils/ScrollUtils';
 import JsonEditor from './JsonEditor.vue';
 import { useDataStore } from '../store/GlobalData';
+import { defaultJson } from '../utils/JsonUtils';
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
@@ -37,20 +38,16 @@ const emit = defineEmits<{
 const jsonInput = ref('');
 const searchInput = ref('');
 const searchInputRef = ref<HTMLInputElement | null>(null);
-const jsonInputRef = ref<HTMLTextAreaElement | null>(null);
+const jsonInputRef = ref<HTMLDivElement | null>(null);
 const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
 
 const globalDataStore = useDataStore();
 
-const textareaPlaceholder = ref(`JSON: 输入完 Json 数据后, 点击下面的加载按钮
-Fetch: // 示例代码 fetch('https://jsonplaceholder.typicode.com/posts');
-`);
-
 const emitRenderJson = () => {
   // const cleanedInput = jsonInput.value.trim();
-  const cleanedInput = globalDataStore.jsonValue.trim();
+  const cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
   try {
     const parsedJson = JSON.parse(cleanedInput);
     console.log(parsedJson);
@@ -106,7 +103,7 @@ const logFocus = (event: FocusEvent) => {
 };
 
 const isTextareaFocused = () => {
-  return document.activeElement === jsonInputRef.value;
+  return document.activeElement?.classList.contains("cm-content");
 };
 
 const isInputFocused = () => {

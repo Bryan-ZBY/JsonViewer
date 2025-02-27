@@ -4,30 +4,26 @@
       <li v-for="(item, index) in visibleItems" :key="item.key" class="eleli"
         @click="selectItem(index, $event, item)"
         @mouseenter="showCopyButton($event, item)">
-        <template v-if="item.isObjectOrArray">
-          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
-            <span class="json-key" v-html="item.highlightedKeyValue"></span>
-            <!-- <span class="json-key" >{{item.key}}: </span> -->
+        <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
+          <span class="json-key" v-html="item.highlightedKeyValue"></span>
+          <template v-if="item.isObjectOrArray">
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
             </span>
             <span class="summary" v-show="!item.isCollapsed" v-html="item.highlightedSummaryValue"></span>
-            <!-- <span class="summary" v-show="!item.isCollapsed">{{item.summary}}</span> -->
             <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
-          </div>
-          <div v-show="item.isCollapsed" class="nested-container">
-            <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" />
-          </div>
-        </template>
-        <template v-else>
-          <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }">
-            <span class="json-key" v-html="item.highlightedKeyValue"></span>
+          </template>
+          <template v-else>
             <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
             <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+          </template>
+        </div>
+
+          <div v-if="item.isObjectOrArray" v-show="item.isCollapsed" class="nested-container">
+            <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" />
           </div>
-        </template>
       </li>
     </ul>
   </div>
