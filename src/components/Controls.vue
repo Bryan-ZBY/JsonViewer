@@ -3,10 +3,19 @@
     <div class="controls">
       <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
       <button @click="emit('toggle-dark-mode')">主题</button>
-      <!-- <textarea v-model="jsonInput" ref="jsonInputRef" @focus="logFocus"></textarea> -->
-      <JsonEditor ref="jsonInputRef"/>
+      <!-- <textarea v-model="jsonInput"  @focus="logFocus"></textarea> -->
+      <!-- <JsonEditor :editor-view="editorView" /> -->
+
+      <div class="inputDiv">
+        <div class="editor-container">
+          <JsonEditorTitle :editor-view="editorView"/>
+
+          <div ref="editorRef" style="height: calc(100% - 40px)"></div>
+        </div>
+      </div>
+
       <button @click="emitRenderJson">加载</button>
-      <button @click="clearJsonInput">清空</button>
+      <button @click="clearEditor">清空</button>
       <button @click="doFetch">请求数据</button>
       <button @click="emit('collapse-all')">收起</button>
       <div class="search-wrapper">
@@ -14,19 +23,22 @@
       </div>
     </div>
 
-<!-- <JsonInput2 /> -->
     <!-- 使用新的快捷键帮助组件 -->
     <ShortcutHelpModal :visible="showHelpModal" @close="showHelpModal = false" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
+import JsonEditorTitle from './JsonEditorTitle.vue';
 import { scrollTo } from '../utils/ScrollUtils';
 import JsonEditor from './JsonEditor.vue';
 import { useDataStore } from '../store/GlobalData';
 import { defaultJson } from '../utils/JsonUtils';
+import { EditorView } from "@codemirror/view"
+import { EditorState } from "@codemirror/state";
+import { GenerateEditorState, GenerateNewState } from '../utils/EditorState';
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
@@ -35,18 +47,36 @@ const emit = defineEmits<{
   (e: 'toggle-dark-mode'): void;
 }>();
 
-const jsonInput = ref('');
 const searchInput = ref('');
 const searchInputRef = ref<HTMLInputElement | null>(null);
-const jsonInputRef = ref<HTMLDivElement | null>(null);
 const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
 
 const globalDataStore = useDataStore();
 
+// 定义编辑器实例
+const editorView = ref(null);
+const editorRef = ref(null);
+
+// 初始化 CodeMirror
+onMounted(() => {
+  const state = GenerateEditorState();
+
+  editorView.value = new EditorView({
+    state,
+    parent: editorRef.value, // 将编辑器挂载到 DOM
+  });
+});
+
+// 清理编辑器实例
+onBeforeUnmount(() => {
+  if (editorView.value) {
+    editorView.value.destroy();
+  }
+});
+
 const emitRenderJson = () => {
-  // const cleanedInput = jsonInput.value.trim();
   const cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
   try {
     const parsedJson = JSON.parse(cleanedInput);
@@ -58,16 +88,27 @@ const emitRenderJson = () => {
   }
 };
 
-const clearJsonInput = () => {
-  jsonInput.value = '';
+
+// 清空编辑器内容的方法
+const clearEditor = () => {
+  if (editorView.value) {
+    // 创建一个空的文档状态
+    const emptyState = GenerateNewState();
+    // 更新编辑器的状态为清空后的状态
+    console.log('更新状态后的编辑器内容:', editorView.value.state.doc.toString());
+    editorView.value.setState(emptyState);
+    globalDataStore.updateGlobalValue('');
+    console.log('更新状态后的编辑器内容:', editorView.value.state.doc.toString());
+  }
 };
 
 const doFetch = async () => {
-  if(!jsonInput.value){
-    jsonInput.value = `fetch('https://jsonplaceholder.typicode.com/posts');`;
+  let jsonInput = globalDataStore.globalValue;
+  if(!jsonInput){
+    jsonInput = `fetch('https://jsonplaceholder.typicode.com/posts');`;
   }
 
-  let code = jsonInput.value.trim();
+  let code = jsonInput.trim();
   console.log(code)
 
   if (code.endsWith(';')) { code = code.slice(0, -1); }
@@ -83,7 +124,7 @@ const doFetch = async () => {
       emit('render-json', result);
     }
   } catch (error: any) {
-    jsonInput.value = `执行出错: ${error.message}`;
+  globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
   }
 };
 
@@ -121,10 +162,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
     event.preventDefault(); // 防止默认行为，如在浏览器中触发查找功能
     if (searchInputRef.value) {
       searchInputRef.value.blur();
-    }
-
-    if (jsonInputRef.value) {
-      jsonInputRef.value.blur();
     }
 
     showHelpModal.value = false; // 打开帮助模态框
@@ -261,5 +298,36 @@ onUnmounted(() => {
 
 .search-wrapper {
   margin-left: auto;
+}
+
+.editor-container {
+  width: 100%; /* 初始宽度 */
+  height: 300px; /* 初始高度 */
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  overflow: auto; /* 确保内容超出时可以滚动 */
+  resize: both; /* 允许水平和垂直拖动调整大小 */
+  max-width: 100%; /* 最大宽度 */
+  max-height: 800px;
+  min-width: 200px; /* 最小宽度，防止拖得太小 */
+  min-height: 100px; /* 最小高度，防止拖得太小 */
+}
+
+/* 确保 CodeMirror 的内容区域适应容器大小 */
+:deep(.cm-editor) {
+  height: 100%;
+  width: 100%;
+}
+
+.inputDiv {
+  width: 100%;
+  display: flex
+    ;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.semi-icon:hover {
+  background: #000;
 }
 </style>

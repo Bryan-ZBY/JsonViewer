@@ -1,7 +1,7 @@
 <template >
   <div class="inputDiv">
     <div class="editor-container">
-      <JsonEditorTitle :editor-view="editorView"/>
+      <JsonEditorTitle :editor-view="props.editorView"/>
 
       <div ref="editorRef" style="height: calc(100% - 40px)"></div>
     </div>
@@ -9,49 +9,17 @@
   <button @click="tete">tset</button>
 </template>
 
-<script setup>
-import { GenerateEditorState } from '../utils/EditorState';
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
-import { EditorState } from "@codemirror/state";
+<script setup lang="ts">
 import { EditorView } from "@codemirror/view"
-import { lintKeymap } from "@codemirror/lint"
 import { vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
 import JsonEditorTitle from './JsonEditorTitle.vue';
 
-// 定义编辑器实例
-const editorView = ref(null);
-const editorRef = ref(null);
 
-// 初始化 CodeMirror
-onMounted(() => {
-  const state = GenerateEditorState();
+// 定义接收的属性
+const props = defineProps<{
+  editorView: EditorView;
+}>();
 
-  editorView.value = new EditorView({
-    state,
-    parent: editorRef.value, // 将编辑器挂载到 DOM
-  });
-});
-
-// 清理编辑器实例
-onBeforeUnmount(() => {
-  if (editorView.value) {
-    editorView.value.destroy();
-  }
-});
-
-// 复制代码到剪贴板
-const copyCode = () => {
-  if (editorView.value) {
-    const code = editorView.value.state.doc.toString();
-    navigator.clipboard.writeText(code).then(() => {
-      console.log('代码已复制到剪贴板');
-    }).catch((error) => {
-      console.error('复制代码时出错:', error);
-    });
-  }
-};
 </script>
 
 <style scoped>
