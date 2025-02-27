@@ -13,6 +13,8 @@
       </div>
     </div>
 
+<JsonEditor />
+<!-- <JsonInput2 /> -->
     <!-- 使用新的快捷键帮助组件 -->
     <ShortcutHelpModal :visible="showHelpModal" @close="showHelpModal = false" />
   </div>
@@ -22,7 +24,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import { scrollTo, scrollOver } from '../utils/ScrollUtils.ts';
-
+import JsonEditor from './JsonEditor.vue';
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
