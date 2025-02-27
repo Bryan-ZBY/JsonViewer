@@ -22,3 +22,34 @@ body.dark-mode {
   color: #000000;
 }
 
+div .ͼ13 {
+    color: #b1f6ac;
+}
+
+
+div .ͼo {
+    color: #ffbefa;
+    background-color: #000000;
+}
+
+/* 滚动条整体样式 */
+.cm-scroller::-webkit-scrollbar {
+  width: 15px;
+}
+
+/* 滚动条轨道 */
+.cm-scroller::-webkit-scrollbar-track {
+  background-color: #282c34;
+  border-radius: 0px;
+}
+
+/* 滚动条滑块 */
+.cm-scroller::-webkit-scrollbar-thumb {
+  background-color: #44548a;
+  border-radius: 0;
+}
+
+/* 滚动条角落 */
+.cm-scroller::-webkit-scrollbar-corner {
+  background-color: #282c34;
+}
