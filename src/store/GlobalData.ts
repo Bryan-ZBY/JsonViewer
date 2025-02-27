@@ -6,7 +6,8 @@ export const useDataStore = defineStore('globalData', {
     // 定义全局数据
     globalValue: '初始值',
     selectedKey: '',
-    copyKey: ''
+    copyKey: '',
+    jsonValue: ''
   }),
   actions: {
     // 定义修改数据的方法
@@ -18,6 +19,9 @@ export const useDataStore = defineStore('globalData', {
     },
     updateCopyKey(newValue: string){
       this.copyKey = newValue;
+    },
+    updateJsonValue(newValue: string){
+      this.jsonValue = newValue;
     }
   }
 });

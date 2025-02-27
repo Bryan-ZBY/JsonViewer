@@ -3,7 +3,8 @@
     <div class="controls">
       <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
       <button @click="emit('toggle-dark-mode')">主题</button>
-      <textarea v-model="jsonInput" ref="jsonInputRef" :placeholder="textareaPlaceholder" class="json-input" @focus="logFocus"></textarea>
+      <!-- <textarea v-model="jsonInput" ref="jsonInputRef" :placeholder="textareaPlaceholder" class="json-input" @focus="logFocus"></textarea> -->
+      <JsonEditor />
       <button @click="emitRenderJson">加载</button>
       <button @click="clearJsonInput">清空</button>
       <button @click="doFetch">请求数据</button>
@@ -13,7 +14,6 @@
       </div>
     </div>
 
-<JsonEditor />
 <!-- <JsonInput2 /> -->
     <!-- 使用新的快捷键帮助组件 -->
     <ShortcutHelpModal :visible="showHelpModal" @close="showHelpModal = false" />
@@ -25,6 +25,7 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import { scrollTo, scrollOver } from '../utils/ScrollUtils.ts';
 import JsonEditor from './JsonEditor.vue';
+import { useDataStore } from '../store/GlobalData';
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
@@ -41,12 +42,15 @@ const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
 
+const globalDataStore = useDataStore();
+
 const textareaPlaceholder = ref(`JSON: 输入完 Json 数据后, 点击下面的加载按钮
 Fetch: // 示例代码 fetch('https://jsonplaceholder.typicode.com/posts');
 `);
 
 const emitRenderJson = () => {
-  const cleanedInput = jsonInput.value.trim();
+  // const cleanedInput = jsonInput.value.trim();
+  const cleanedInput = globalDataStore.jsonValue.trim();
   try {
     const parsedJson = JSON.parse(cleanedInput);
     console.log(parsedJson);
