@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
+import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import JsonEditorTitle from './JsonEditorTitle.vue';
 import { scrollTo } from '../utils/ScrollUtils';
@@ -38,7 +39,8 @@ import { useDataStore } from '../store/GlobalData';
 import { defaultJson } from '../utils/JsonUtils';
 import { EditorView } from "@codemirror/view"
 import { EditorState } from "@codemirror/state";
-import { GenerateEditorState, GenerateNewState } from '../utils/EditorState';
+import { GenerateEditorState } from '../utils/EditorState';
+import { foldCode, unfoldCode } from "@codemirror/language"
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
@@ -67,6 +69,23 @@ onMounted(() => {
     state,
     parent: editorRef.value, // 将编辑器挂载到 DOM
   });
+
+Vim.defineAction('fold', () => {
+    const view = editorView.value;
+    if (!view) return;
+    const pos = view.state.selection.main.head;
+    foldCode(view, pos);
+  });
+
+  Vim.defineAction('unfold', () => {
+    const view = editorView.value;
+    if (!view) return;
+    const pos = view.state.selection.main.head;
+    unfoldCode(view, pos);
+  });
+
+  Vim.mapCommand('zc', 'action', 'fold', {}, 'normal');
+  Vim.mapCommand('zo', 'action', 'unfold', {}, 'normal');
 });
 
 // 清理编辑器实例
@@ -92,18 +111,19 @@ const emitRenderJson = () => {
 // 清空编辑器内容的方法
 const clearEditor = () => {
   if (editorView.value) {
-    // 创建一个空的文档状态
-    const emptyState = GenerateNewState();
-    // 更新编辑器的状态为清空后的状态
-    console.log('更新状态后的编辑器内容:', editorView.value.state.doc.toString());
-    editorView.value.setState(emptyState);
-    globalDataStore.updateGlobalValue('');
-    console.log('更新状态后的编辑器内容:', editorView.value.state.doc.toString());
+    editorView.value.dispatch({
+      changes: {
+        from: 0,
+        to: editorView.value.state.doc.length, // 从开头到结尾
+        insert: '' // 插入空字符串，相当于清空
+      }
+    });
+    globalDataStore.updateGlobalValue(''); // 更新全局状态
   }
 };
 
 const doFetch = async () => {
-  let jsonInput = globalDataStore.globalValue;
+  let jsonInput = editorView.value.state.doc.toString();
   if(!jsonInput){
     jsonInput = `fetch('https://jsonplaceholder.typicode.com/posts');`;
   }
@@ -112,19 +132,37 @@ const doFetch = async () => {
   console.log(code)
 
   if (code.endsWith(';')) { code = code.slice(0, -1); }
-  code = 'return ' + code + `.then(response => response.json());`;
+  code = code.replace(/fetch\(/, 'return fetch(') + `.then(response => response.json());`;
 
   try {
     const func = new Function(code);
     const result = await func();
     if (result instanceof Promise) {
       const finalResult = await result;
-      emit('render-json', finalResult);
+      editorView.value?.dispatch({
+        changes: {
+          from: 0,
+          to: editorView.value!.state.doc.length, // 从开头到结尾
+          insert: JSON.stringify(finalResult, null, 2)
+        }
+      });
+      globalDataStore.updateGlobalValue(JSON.stringify(finalResult)); // 更新全局状态
+
+      // emit('render-json', finalResult);
     } else {
-      emit('render-json', result);
+      editorView.value?.dispatch({
+        changes: {
+          from: 0,
+          to: editorView.value!.state.doc.length, // 从开头到结尾
+          insert: JSON.stringify(result, null, 2)
+        }
+      });
+      globalDataStore.updateGlobalValue(JSON.stringify(result)); // 更新全局状态
+
+      // emit('render-json', result);
     }
   } catch (error: any) {
-  globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
+    globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
   }
 };
 

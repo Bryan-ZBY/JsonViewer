@@ -11,7 +11,9 @@ import {
 } from "@codemirror/view"
 import {
   defaultHighlightStyle, syntaxHighlighting, indentOnInput,
-  bracketMatching, foldGutter, foldKeymap
+  bracketMatching, foldGutter, foldKeymap,
+  foldCode,
+  unfoldCode
 } from "@codemirror/language"
 import {
   defaultKeymap, history, historyKeymap
@@ -24,7 +26,21 @@ import {
   closeBracketsKeymap
 } from "@codemirror/autocomplete"
 import { lintKeymap } from "@codemirror/lint"
-import { vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
+import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
+
+// 定义VIM快捷键
+{
+  // 在插入模式下将 "jj" 映射为 "<Esc>"
+  Vim.map('jk', '<Esc>', 'insert');
+
+
+  // Vim.map('d', '20j', 'normal');
+  // Vim.map('<Ctrl>+u', '20k', 'normal');
+
+
+
+}
+
 
 const basicExtensions = [
       // A line number gutter
@@ -93,34 +109,6 @@ const basicKeymap = [
   ...lintKeymap // 定义了与代码检查（linter）系统相关的键盘快捷键，例如跳转到下一个错误或警告位置等操作的快捷键。
 ];
 
-function GenerateNewState(initialCode: any){
-  const globalDataStore = useDataStore();
-  const state = EditorState.create({
-    doc: initialCode, // 初始代码
-    extensions: [
-      ...basicExtensions,
-
-      keymap.of(basicKeymap),
-
-      javascript(), // JavaScript 语法高亮
-      oneDark, // 暗色主题
-      vim(), // 启用 Vim 模式
-
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) {
-          // 当内容变化时，获取最新代码
-          const newCode = update.state.doc.toString();
-          globalDataStore.updateJsonValue(newCode);
-          console.log('代码更新:', newCode);
-        }
-      }),
-    ],
-  });
-
-  return state;
-}
-
-
 function GenerateEditorState(){
   const globalDataStore = useDataStore();
 
@@ -172,4 +160,4 @@ function GenerateEditorState(){
   return state;
 }
 
-export { GenerateNewState, GenerateEditorState }
+export { GenerateEditorState }
