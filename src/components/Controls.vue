@@ -86,6 +86,30 @@ Vim.defineAction('fold', () => {
 
   Vim.mapCommand('zc', 'action', 'fold', {}, 'normal');
   Vim.mapCommand('zo', 'action', 'unfold', {}, 'normal');
+
+// 定义粘贴动作
+      Vim.defineAction('pasteFromClipboard', async () => {
+        const view = editorView.value;
+        if (!view) return;
+
+        try {
+          // 读取剪贴板内容
+          const text = await navigator.clipboard.readText();
+          // 获取当前光标位置
+          const pos = view.state.selection.main.head;
+          // 插入剪贴板内容
+          view.dispatch({
+            changes: { from: pos, insert: text },
+            selection: { anchor: pos + text.length }, // 更新光标位置
+          });
+        } catch (err) {
+          console.error('Failed to paste from clipboard:', err);
+        }
+      });
+
+      // 将 Ctrl-v 映射到粘贴动作
+      Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'normal');
+      Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'insert'); // 在插入模式也支持
 });
 
 // 清理编辑器实例

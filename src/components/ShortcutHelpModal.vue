@@ -2,7 +2,7 @@
   <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-content">
       <div class="modal-header">
-        <h2>帮助</h2>
+        <h2>列举部分常用快捷键</h2>
         <span class="close-button" @click="$emit('close')">×</span>
       </div>
       <ul class="shortcut-list">
@@ -28,21 +28,44 @@ defineEmits<{
 
 // 定义快捷键数据
 const shortcuts = ref([
+  // 已有的快捷键
   { key: '?', description: '帮助' },
-  { key: '/', description: '聚焦搜索框' },
-  { key: 'Esc', description: '取消搜索框和输入框聚焦' },
-  { key: 'y', description: '复制' },
-  { key: 'j', description: '高亮行下移' },
-  { key: 'k', description: '高亮行上移' },
-  { key: 'h', description: '收起到父节点' },
-  { key: 'l', description: '展开子节点' },
-  { key: 'd', description: '屏幕下移半页' },
-  { key: 'u', description: '屏幕上移半页' },
-  { key: 'g', description: '到顶部' },
+  { key: 'iI | aA | oO', description: '进入插入模式' },
+  { key: 'Esc | jk', description: '退出插入模式' },
+  { key: 'yy', description: '复制整行(文档内)' },
+  { key: 'p', description: '粘贴(仅作了文档内)' },
+  { key: 'dd', description: '删除整行' },
+  { key: 'A-k', description: '上移整行' },
+  { key: 'A-j', description: '下移整行' },
+  { key: 't', description: '向上滚动' },
+  { key: 'f', description: '向下滚动' },
+
+  { key: 'zc', description: '收起到父节点（折叠当前代码块）' },
+  { key: 'zo', description: '展开子节点（展开当前代码块）' },
+  { key: 'zz', description: '当前行居中' },
+  { key: 'gg', description: '到顶部' },
   { key: 'G', description: '到底部' },
-  { key: 'n', description: '下一个匹配项' },
-  { key: 'N', description: '上一个匹配项' },
-])
+
+  { key: '/', description: '启动正向搜索' },
+  { key: 'n', description: '下一个匹配项（搜索结果）' },
+  { key: 'N', description: '上一个匹配项（搜索结果）' },
+
+  // 移动类（常用 Vim 导航）
+  { key: '%', description: '跳转到匹配的括号/符号' },
+
+  // 编辑类
+  { key: 'u', description: '撤销' },
+  { key: 'Ctrl-r', description: '恢复' },
+
+  // 可视模式
+  { key: 'V', description: '选一行' },
+
+  // 搜索与替换
+  { key: '*', description: '搜索光标下的单词（正向）' },
+  { key: '#', description: '搜索光标下的单词（反向）' },
+  { key: ':s/old/new', description: '替换当前行的 old 为 new' },
+  { key: ':%s/old/new/g', description: '全局替换 old 为 new' },
+]);
 </script>
 
 <style scoped>
@@ -65,12 +88,14 @@ const shortcuts = ref([
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 500px;
+  max-width: 1000px; /* 增加宽度以适应两列 */
   width: 90%;
   font-family: Arial, sans-serif;
   font-size: 14px;
   position: relative;
   z-index: 1001;
+  max-height: 80vh; /* 限制高度，避免溢出屏幕 */
+  overflow-y: auto; /* 启用垂直滚动 */
 }
 
 .modal-header {
@@ -105,6 +130,8 @@ const shortcuts = ref([
   list-style: none;
   padding: 0;
   margin: 0;
+  column-count: 2; /* 分成两列 */
+  column-gap: 200px; /* 列间距 */
 }
 
 .shortcut-list li {
@@ -113,6 +140,7 @@ const shortcuts = ref([
   display: flex;
   justify-content: space-between;
   align-items: center;
+  break-inside: avoid; /* 防止列表项跨列分割 */
 }
 
 .shortcut-list li:last-child {

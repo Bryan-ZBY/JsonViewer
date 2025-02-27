@@ -34,8 +34,10 @@ import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
   Vim.map('jk', '<Esc>', 'insert');
 
 
-  // Vim.map('d', '20j', 'normal');
-  // Vim.map('<Ctrl>+u', '20k', 'normal');
+  Vim.map('f', '20j', 'normal');
+  Vim.map('t', '20k', 'normal');
+  Vim.map('<A-j>', 'ddp', 'normal');
+  Vim.map('<A-k>', 'ddkP', 'normal');
 
 
 
@@ -69,12 +71,6 @@ const basicExtensions = [
 
       // Load the autocompletion system
       autocompletion(), // 启用代码自动补全功能。当用户输入代码时，编辑器会根据上下文和已知的代码信息提供可能的补全选项，用户可以通过快捷键（通常是 Tab 键）选择合适的补全项。
-
-      // Allow alt-drag to select rectangular regions
-      rectangularSelection(), // 允许用户通过按住 Alt 键并拖动鼠标来选择一个矩形区域的文本。这种选择方式在处理表格数据或多行代码的某一部分时非常有用。
-
-      // Change the cursor to a crosshair when holding alt
-      crosshairCursor(), // 当用户按住 Alt 键时，鼠标光标会变成十字线样式，这通常与矩形选择功能配合使用，提示用户可以进行矩形区域的选择。
 
       // Style the current line specially
       highlightActiveLine(), // 会将当前光标所在的行进行特殊样式的高亮显示，使用户更容易定位当前编辑的行。
