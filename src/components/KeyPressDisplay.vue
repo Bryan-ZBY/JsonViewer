@@ -90,6 +90,6 @@ export default {
   margin-bottom: 10px;
   opacity: 1;
   /* 先执行 200ms 的 stayVisible 动画，然后执行 1s 的 fadeOut 动画 */
-  animation: stayVisible 1s ease, fadeOut 1s ease-out 200ms forwards;
+  animation: stayVisible 0.6s ease, fadeOut 0.6s ease-out 0.4s forwards;
 }
 </style>

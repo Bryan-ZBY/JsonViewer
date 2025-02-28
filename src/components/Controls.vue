@@ -3,13 +3,11 @@
     <div class="controls">
       <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
       <button @click="emit('toggle-dark-mode')">主题</button>
-      <!-- <textarea v-model="jsonInput"  @focus="logFocus"></textarea> -->
-      <!-- <JsonEditor :editor-view="editorView" /> -->
+      <button @click="toggleFullScreen">全屏</button> <!-- 新增全屏按钮 -->
 
       <div class="inputDiv">
         <div class="editor-container">
-          <JsonEditorTitle :editor-view="editorView"/>
-
+          <JsonEditorTitle :editor-view="editorView" />
           <div ref="editorRef" style="height: calc(100% - 40px)"></div>
         </div>
       </div>
@@ -19,7 +17,16 @@
       <button @click="doFetch">请求数据</button>
       <button @click="emit('collapse-all')">收起</button>
       <div class="search-wrapper">
-        <input v-model="searchInput" ref="searchInputRef" type="text" placeholder="Search JSON..." @keydown.enter="handleEnter" @keydown.up="handleArrowUp" @keydown.down="handleArrowDown" @focus="logFocus" />
+        <input
+          v-model="searchInput"
+          ref="searchInputRef"
+          type="text"
+          placeholder="Search JSON..."
+          @keydown.enter="handleEnter"
+          @keydown.up="handleArrowUp"
+          @keydown.down="handleArrowDown"
+          @focus="logFocus"
+        />
       </div>
     </div>
 
@@ -37,10 +44,10 @@ import { scrollTo } from '../utils/ScrollUtils';
 import JsonEditor from './JsonEditor.vue';
 import { useDataStore } from '../store/GlobalData';
 import { defaultJson } from '../utils/JsonUtils';
-import { EditorView } from "@codemirror/view"
-import { EditorState } from "@codemirror/state";
+import { EditorView } from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
 import { GenerateEditorState } from '../utils/EditorState';
-import { foldCode, unfoldCode } from "@codemirror/language"
+import { foldCode, unfoldCode } from '@codemirror/language';
 
 const emit = defineEmits<{
   (e: 'render-json', data: any): void;
@@ -54,12 +61,13 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
+const isFullScreen = ref(false); // 跟踪全屏状态
 
 const globalDataStore = useDataStore();
 
 // 定义编辑器实例
-const editorView = ref(null);
-const editorRef = ref(null);
+const editorView = ref<EditorView | null>(null);
+const editorRef = ref<HTMLElement | null>(null);
 
 // 初始化 CodeMirror
 onMounted(() => {
@@ -96,17 +104,32 @@ onMounted(() => {
       // 读取剪贴板内容
       const text = await navigator.clipboard.readText();
       const selection = view.state.selection.main;
+      const docLength = view.state.doc.length;
 
-      // 检查是否有选中文本（normal 模式下可能通过可视模式选中）
-      if (selection.from !== selection.to) {
-        // 有选中文本，覆盖选中区域
+      // 如果文档为空，强制从位置 0 开始
+      if (docLength === 0) {
         view.dispatch({
-          changes: { from: selection.from, to: selection.to, insert: text },
-          selection: { anchor: selection.from + text.length }, // 更新光标位置
+          changes: { from: 0, to: 0, insert: text },
+          selection: { anchor: text.length },
+        });
+        return;
+      }
+
+      // 验证选择范围是否有效
+      const from = Math.max(0, Math.min(selection.from, docLength));
+      const to = Math.max(from, Math.min(selection.to, docLength));
+
+      console.log('Before dispatch:', { from, to, docLength, text });
+
+      if (from !== to || (from === 0 && to === docLength)) {
+        // 有选中文本，或全选的情况，覆盖选中区域
+        view.dispatch({
+          changes: { from, to, insert: text },
+          selection: { anchor: from + text.length },
         });
       } else {
         // 无选中文本，插入到光标位置
-        const pos = selection.head;
+        const pos = Math.max(0, Math.min(selection.head, docLength));
         view.dispatch({
           changes: { from: pos, insert: text },
           selection: { anchor: pos + text.length },
@@ -119,6 +142,14 @@ onMounted(() => {
 
   // 将 Ctrl-v 映射到粘贴动作
   Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'normal');
+
+  // 添加快捷键支持全屏（可选）
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'F11') {
+      e.preventDefault();
+      toggleFullScreen();
+    }
+  });
 });
 
 // 清理编辑器实例
@@ -140,31 +171,61 @@ const emitRenderJson = () => {
   }
 };
 
-
 // 清空编辑器内容的方法
 const clearEditor = () => {
   if (editorView.value) {
     editorView.value.dispatch({
       changes: {
         from: 0,
-        to: editorView.value.state.doc.length, // 从开头到结尾
-        insert: '' // 插入空字符串，相当于清空
-      }
+        to: editorView.value.state.doc.length,
+        insert: '',
+      },
     });
-    globalDataStore.updateGlobalValue(''); // 更新全局状态
+    globalDataStore.updateGlobalValue('');
   }
 };
 
+// 全屏切换方法
+const toggleFullScreen = () => {
+  const editorContainer = editorRef.value;
+  if (!editorContainer || !editorView.value) return;
+
+  if (isFullScreen.value) {
+    // 退出全屏，恢复默认样式
+    editorContainer.style.position = '';
+    editorContainer.style.top = '';
+    editorContainer.style.left = '';
+    editorContainer.style.width = '';
+    editorContainer.style.height = '';
+    editorContainer.style.zIndex = '';
+    editorContainer.style.backgroundColor = '';
+  } else {
+    // 进入全屏
+    editorContainer.style.position = 'fixed';
+    editorContainer.style.top = '0';
+    editorContainer.style.left = '0';
+    editorContainer.style.width = '100vw';
+    editorContainer.style.height = '100vh';
+    editorContainer.style.zIndex = '9999';
+    editorContainer.style.backgroundColor = '#fff'; // 可根据主题调整
+  }
+
+  isFullScreen.value = !isFullScreen.value;
+  editorView.value.requestMeasure(); // 更新 CodeMirror 布局
+};
+
 const doFetch = async () => {
-  let jsonInput = editorView.value.state.doc.toString();
-  if(!jsonInput){
+  let jsonInput = editorView.value?.state.doc.toString() || '';
+  if (!jsonInput) {
     jsonInput = `fetch('https://jsonplaceholder.typicode.com/posts');`;
   }
 
   let code = jsonInput.trim();
-  console.log(code)
+  console.log(code);
 
-  if (code.endsWith(';')) { code = code.slice(0, -1); }
+  if (code.endsWith(';')) {
+    code = code.slice(0, -1);
+  }
   code = code.replace(/fetch\(/, 'return fetch(') + `.then(response => response.json());`;
 
   try {
@@ -175,24 +236,20 @@ const doFetch = async () => {
       editorView.value?.dispatch({
         changes: {
           from: 0,
-          to: editorView.value!.state.doc.length, // 从开头到结尾
-          insert: JSON.stringify(finalResult, null, 2)
-        }
+          to: editorView.value.state.doc.length,
+          insert: JSON.stringify(finalResult, null, 2),
+        },
       });
-      globalDataStore.updateGlobalValue(JSON.stringify(finalResult)); // 更新全局状态
-
-      // emit('render-json', finalResult);
+      globalDataStore.updateGlobalValue(JSON.stringify(finalResult));
     } else {
       editorView.value?.dispatch({
         changes: {
           from: 0,
-          to: editorView.value!.state.doc.length, // 从开头到结尾
-          insert: JSON.stringify(result, null, 2)
-        }
+          to: editorView.value.state.doc.length,
+          insert: JSON.stringify(result, null, 2),
+        },
       });
-      globalDataStore.updateGlobalValue(JSON.stringify(result)); // 更新全局状态
-
-      // emit('render-json', result);
+      globalDataStore.updateGlobalValue(JSON.stringify(result));
     }
   } catch (error: any) {
     globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
@@ -215,7 +272,7 @@ const logFocus = (event: FocusEvent) => {
 };
 
 const isTextareaFocused = () => {
-  return document.activeElement?.classList.contains("cm-content");
+  return document.activeElement?.classList.contains('cm-content');
 };
 
 const isInputFocused = () => {
@@ -223,59 +280,53 @@ const isInputFocused = () => {
 };
 
 const isInput = () => {
-  return isTextareaFocused() || isInputFocused()
-}
+  return isTextareaFocused() || isInputFocused();
+};
 
 // 配置快捷键
 const handleKeyDown = (event: KeyboardEvent) => {
-  // 清除所有输入框选中态
   if (event.key === 'Escape') {
-    event.preventDefault(); // 防止默认行为，如在浏览器中触发查找功能
+    event.preventDefault();
     if (searchInputRef.value) {
       searchInputRef.value.blur();
     }
-
-    showHelpModal.value = false; // 打开帮助模态框
+    showHelpModal.value = false;
+    if (isFullScreen.value) toggleFullScreen(); // Esc 退出全屏（可选）
   }
 
-  if(isInput()){
-    // 如果输入框或搜索框处于选中状态, 则不进行操作
+  if (isInput()) {
     return;
   }
 
   if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
-    event.preventDefault(); // 防止默认行为
-    showHelpModal.value = true; // 打开帮助模态框
+    event.preventDefault();
+    showHelpModal.value = true;
   }
 
   if (event.key === '/' || event.key === 'f') {
-    event.preventDefault(); // 防止默认行为，如在浏览器中触发查找功能
+    event.preventDefault();
     if (searchInputRef.value) {
       searchInputRef.value.focus();
-      searchInputRef.value.select(); // 全选搜索框内容
+      searchInputRef.value.select();
     }
   }
 
-  // 到顶
-  if(event.key == 'g'){
+  if (event.key === 'g') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // 到底
-  if(event.key == 'G'){
-    window.scrollTo({ 
-      top: document.documentElement.scrollHeight, 
-      behavior: 'smooth' 
+  if (event.key === 'G') {
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: 'smooth',
     });
   }
 
-  // 向下滚动
-  if(event.key == 'd'){
+  if (event.key === 'd') {
     scrollTo(false);
   }
 
-  // 向上滚动
-  if(event.key == 'u'){
+  if (event.key === 'u') {
     scrollTo(true);
   }
 };
@@ -382,6 +433,7 @@ onUnmounted(() => {
   max-height: 800px;
   min-width: 200px; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
+  transition: all 0.3s ease; /* 平滑过渡 */
 }
 
 /* 确保 CodeMirror 的内容区域适应容器大小 */
@@ -392,8 +444,7 @@ onUnmounted(() => {
 
 .inputDiv {
   width: 100%;
-  display: flex
-    ;
+  display: flex;
   flex-direction: row;
   justify-content: center;
 }

@@ -36,10 +36,10 @@ import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
 
   Vim.map('f', '20j', 'normal');
   Vim.map('t', '20k', 'normal');
+  Vim.map('<A-j>', '<Esc>ddpi', 'insert');
+  Vim.map('<A-k>', '<Esc>ddkPi', 'insert');
   Vim.map('<A-j>', 'ddp', 'normal');
   Vim.map('<A-k>', 'ddkP', 'normal');
-
-
 
 }
 

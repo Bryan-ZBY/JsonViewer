@@ -30,7 +30,7 @@ defineEmits<{
 const shortcuts = ref([
   // 已有的快捷键
   { key: '?', description: '帮助' },
-  { key: 'iI | aA | oO', description: '进入插入模式' },
+  { key: 'iI | aA', description: '进入插入模式' },
   { key: 'Esc | jk', description: '退出插入模式' },
   { key: 'yy', description: '复制整行(文档内)' },
   { key: 'p', description: '粘贴(仅作了文档内)' },
