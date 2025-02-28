@@ -103,6 +103,19 @@ const basicKeymap = [
 
   // Keys related to the linter system
   ...lintKeymap // 定义了与代码检查（linter）系统相关的键盘快捷键，例如跳转到下一个错误或警告位置等操作的快捷键。
+
+  ,{
+    key: 'Ctrl-v',
+    run: (view) => {
+      const selection = view.state.selection.main;
+      if (selection.from !== selection.to) {
+        // 如果有选中，浏览器默认粘贴会覆盖
+        return false; // 交给浏览器处理
+      }
+      return false; // 无选中时也交给浏览器
+    },
+    preventDefault: false, // 允许浏览器默认行为
+  }
 ];
 
 function GenerateEditorState(){

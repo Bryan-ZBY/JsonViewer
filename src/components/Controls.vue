@@ -70,7 +70,7 @@ onMounted(() => {
     parent: editorRef.value, // 将编辑器挂载到 DOM
   });
 
-Vim.defineAction('fold', () => {
+  Vim.defineAction('fold', () => {
     const view = editorView.value;
     if (!view) return;
     const pos = view.state.selection.main.head;
@@ -87,29 +87,38 @@ Vim.defineAction('fold', () => {
   Vim.mapCommand('zc', 'action', 'fold', {}, 'normal');
   Vim.mapCommand('zo', 'action', 'unfold', {}, 'normal');
 
-// 定义粘贴动作
-      Vim.defineAction('pasteFromClipboard', async () => {
-        const view = editorView.value;
-        if (!view) return;
+  // 定义粘贴动作
+  Vim.defineAction('pasteFromClipboard', async () => {
+    const view = editorView.value;
+    if (!view) return;
 
-        try {
-          // 读取剪贴板内容
-          const text = await navigator.clipboard.readText();
-          // 获取当前光标位置
-          const pos = view.state.selection.main.head;
-          // 插入剪贴板内容
-          view.dispatch({
-            changes: { from: pos, insert: text },
-            selection: { anchor: pos + text.length }, // 更新光标位置
-          });
-        } catch (err) {
-          console.error('Failed to paste from clipboard:', err);
-        }
-      });
+    try {
+      // 读取剪贴板内容
+      const text = await navigator.clipboard.readText();
+      const selection = view.state.selection.main;
 
-      // 将 Ctrl-v 映射到粘贴动作
-      Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'normal');
-      Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'insert'); // 在插入模式也支持
+      // 检查是否有选中文本（normal 模式下可能通过可视模式选中）
+      if (selection.from !== selection.to) {
+        // 有选中文本，覆盖选中区域
+        view.dispatch({
+          changes: { from: selection.from, to: selection.to, insert: text },
+          selection: { anchor: selection.from + text.length }, // 更新光标位置
+        });
+      } else {
+        // 无选中文本，插入到光标位置
+        const pos = selection.head;
+        view.dispatch({
+          changes: { from: pos, insert: text },
+          selection: { anchor: pos + text.length },
+        });
+      }
+    } catch (err) {
+      console.error('Failed to paste from clipboard:', err);
+    }
+  });
+
+  // 将 Ctrl-v 映射到粘贴动作
+  Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'normal');
 });
 
 // 清理编辑器实例
