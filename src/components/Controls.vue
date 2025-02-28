@@ -12,7 +12,20 @@
           <div ref="editorRef" style="height: calc(100% - 40px)"></div>
         </div>
       </div>
-
+      <div class="inputDiv">
+        <Autocomplete style="width: 100%"/>
+        <!-- <input -->
+        <!--   v-model="searchInput" -->
+        <!--   ref="searchInputRef" -->
+        <!--   type="text" -->
+        <!--   style="width: 100%;" -->
+        <!--   placeholder="已知当前 JSON 为 item, 请用 item.func... 执行过滤函数" -->
+        <!--   @keydown.enter="handleEnter" -->
+        <!--   @keydown.up="handleArrowUp" -->
+        <!--   @keydown.down="handleArrowDown" -->
+        <!--   @focus="logFocus" -->
+        <!-- /> -->
+      </div>
     <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
@@ -45,6 +58,7 @@ import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
 import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import JsonEditorTitle from './JsonEditorTitle.vue';
+import Autocomplete from './Autocomplete.vue';
 import { scrollTo } from '../utils/ScrollUtils';
 import JsonEditor from './JsonEditor.vue';
 import { useDataStore } from '../store/GlobalData';

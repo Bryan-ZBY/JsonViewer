@@ -1,7 +1,7 @@
 <template>
   <div>
     <Controls @render-json="renderJson" @search="performSearch" @collapse-all="collapseAll" />
-    <JsonViewer :json-data="jsonData" parent-key="" ref="jsonViewerRef" />
+    <JsonViewer style="margin-left: 40px;" :json-data="jsonData" parent-key="" ref="jsonViewerRef" />
     <button id="back-to-top" class="fixed-button" @click="scrollToTop">回到顶部</button>
     <KeyPressDisplay />
   </div>

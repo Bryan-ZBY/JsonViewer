@@ -5,19 +5,22 @@
         @click="selectItem(index, $event, item)"
         @mouseenter="showCopyButton($event, item)">
         <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
+          <span v-show="globalDataStore.selectedKey === item.fullKey">
+            <button class="copy-button2"
+              @click.stop="copyKeyToClipboard(item.value, item.key)">{{ copyKeyData }}</button>
+            <button class="copy-button"
+              @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
+          </span>
+
           <span class="json-key" v-html="item.highlightedKeyValue"></span>
           <template v-if="item.isObjectOrArray">
             <span class="collapsible" :class="{ collapsed: item.isCollapsed }">
               {{ Array.isArray(item.value) ? '[' : '{' }}
             </span>
             <span class="summary" v-show="!item.isCollapsed" v-html="item.highlightedSummaryValue"></span>
-            <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
-              @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </template>
           <template v-else>
             <span :class="item.valueClass" class="json-value-text" v-html="item.highlightedValue || JSON.stringify(item.value)"></span>
-            <button class="copy-button" v-show="item.fullKey === globalDataStore.copyKey"
-              @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </template>
         </div>
 
@@ -49,6 +52,7 @@ const container = ref<HTMLElement | null>(null);
 const childViewer = ref<InstanceType<typeof JsonViewer>[]>([]);
 const visibleItems = ref<any[]>([]);
 const copyData = ref<string>("Copy");
+const copyKeyData = ref<string>("Key");
 const selectedIndex = ref<number>(-1);
 const selectedKey = ref<string>("");
 const childCopyActive = ref<boolean>(false); // New reactive property to track child copy button state
@@ -127,40 +131,40 @@ const selectItem = (index: number, event: Event, item: any) => {
   toggleCollapse(event, item);
 };
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  switch (event.key) {
-    case 'j':
-      event.preventDefault();
-      if (selectedIndex.value < visibleItems.value.length - 1) {
-        selectedIndex.value++;
-        selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
-        globalDataStore.updateSelectedKey(selectedKey.value);
-      }
-      break;
-    case 'k':
-      event.preventDefault();
-      if (selectedIndex.value > 0) {
-        selectedIndex.value--;
-        selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
-        globalDataStore.updateSelectedKey(selectedKey.value);
-      }
-      break;
-    case 'h':
-      event.preventDefault();
-      collapseToParent();
-      break;
-    case 'l':
-      event.preventDefault();
-      expandToChild();
-      break;
-    case 'y':
-      event.preventDefault();
-      const item = visibleItems.value[selectedIndex.value];
-      globalDataStore.updateCopyKey(item.fullKey);
-      copyToClipboard(item.value, item.key);
-      break;
-  }
-};
+// const handleKeyDown = (event: KeyboardEvent) => {
+//   switch (event.key) {
+//     case 'j':
+//       event.preventDefault();
+//       if (selectedIndex.value < visibleItems.value.length - 1) {
+//         selectedIndex.value++;
+//         selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
+//         globalDataStore.updateSelectedKey(selectedKey.value);
+//       }
+//       break;
+//     case 'k':
+//       event.preventDefault();
+//       if (selectedIndex.value > 0) {
+//         selectedIndex.value--;
+//         selectedKey.value = visibleItems.value[selectedIndex.value].fullKey;
+//         globalDataStore.updateSelectedKey(selectedKey.value);
+//       }
+//       break;
+//     case 'h':
+//       event.preventDefault();
+//       collapseToParent();
+//       break;
+//     case 'l':
+//       event.preventDefault();
+//       expandToChild();
+//       break;
+//     case 'y':
+//       event.preventDefault();
+//       const item = visibleItems.value[selectedIndex.value];
+//       globalDataStore.updateCopyKey(item.fullKey);
+//       copyToClipboard(item.value, item.key);
+//       break;
+//   }
+// };
 
 const collapseToParent = () => {
   const currentItem = visibleItems.value[selectedIndex.value];
@@ -211,6 +215,14 @@ const showCopyButton = (event: Event, item: any) => {
   copyData.value = "Copy";
   ensureState(key);
   updateVisibleItems();
+};
+
+const copyKeyToClipboard = (value: any, key: string) => {
+  const text = JSON.stringify(key);
+  navigator.clipboard.writeText(text).then(() => {
+    copyKeyData.value = 'OK!';
+    setTimeout(() => (copyKeyData.value = 'Key'), 1500);
+  });
 };
 
 const copyToClipboard = (value: any, key: string) => {
@@ -412,7 +424,21 @@ ul {
 }
 
 .copy-button {
-  margin-left: 10px;
+  position: absolute;
+  right: 70px;
+  padding: 2px 6px;
+  background-color: #6285ab;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.3s;
+}
+
+.copy-button2 {
+  position: fixed;
+  margin-left: -40px;
   padding: 2px 6px;
   background-color: #6285ab;
   color: white;
@@ -428,10 +454,10 @@ ul {
 }
 
 .selected {
-  background-color: #e0e0e0;
+  background-color: #d8e0ff;
 }
 
 .dark-mode .selected {
-  background-color: #444;
+  background-color: #3561b88f;
 }
 </style>
