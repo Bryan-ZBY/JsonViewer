@@ -13,7 +13,7 @@
         </div>
       </div>
       <div class="inputDiv">
-        <Autocomplete style="width: 100%"/>
+        <Autocomplete @filter-json="filterJson" style="width: 100%; "/>
         <!-- <input -->
         <!--   v-model="searchInput" -->
         <!--   ref="searchInputRef" -->
@@ -26,7 +26,7 @@
         <!--   @focus="logFocus" -->
         <!-- /> -->
       </div>
-    <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
+      <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
       <!-- <button @click="doFetch">请求数据</button> -->
@@ -83,6 +83,24 @@ const showHelpModal = ref(false);
 
 const boxHeight = ref("300px");
 const boxWidth = ref("60vw");
+
+const filterJson = (fil: any) => {
+  let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+
+  try {
+    const code = fil.value.replace('item', 'return JSON.parse(input)');
+    const func = new Function('input', code);
+    const result = func(cleanedInput);
+
+    globalDataStore.updateGlobalValue(JSON.stringify(result));
+
+    console.log(result);
+    emit('render-json', result);
+  } catch (error: any) {
+    console.log(`执行出错: ${error.message}`);
+  }
+
+}
 
 const toSmall = () => {
   if(boxHeight.value != "100px"){

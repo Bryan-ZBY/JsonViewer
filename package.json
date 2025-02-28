@@ -17,7 +17,8 @@
     "@replit/codemirror-vim": "^6.2.1",
     "codemirror": "^6.0.1",
     "pinia": "^3.0.1",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-autocomplete": "^0.0.2"
   },
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
