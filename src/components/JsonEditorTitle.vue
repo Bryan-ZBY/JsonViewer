@@ -1,7 +1,7 @@
 
 <template >
   <div class="header-dBhZw9">
-    <div class="text-qQiIjw">html</div>
+    <div class="text-qQiIjw">JSON</div>
     <div class="action-UHHINY">
       <div class="hoverable-fZ6eZQ" data-testid="code-block-copy" tabindex="0" aria-describedby="453o5bh" data-popupid="453o5bh"  @click="copyCode">
         <span role="img" class="semi-icon semi-icon-default text-14">

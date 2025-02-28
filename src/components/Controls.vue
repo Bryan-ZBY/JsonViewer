@@ -16,19 +16,22 @@
     <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
-      <button @click="doFetch">请求数据</button>
-      <button @click="emit('collapse-all')">收起</button>
+      <!-- <button @click="doFetch">请求数据</button> -->
+      <button @click="zipData">压缩</button>
+      <button @click="beautifyData">美化</button>
       <div class="search-wrapper">
         <input
           v-model="searchInput"
           ref="searchInputRef"
           type="text"
+          style="margin-right: 10px;"
           placeholder="Search JSON..."
           @keydown.enter="handleEnter"
           @keydown.up="handleArrowUp"
           @keydown.down="handleArrowDown"
           @focus="logFocus"
         />
+        <button @click="emit('collapse-all')">收起</button>
       </div>
     </div>
 
@@ -193,6 +196,38 @@ const emitRenderJson = () => {
   } catch (error) {
     console.error('JSON Parse Error:', error);
     alert(`Invalid JSON! Error: ${error.message}`);
+  }
+};
+
+// 压缩
+const zipData = () => {
+  let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+  cleanedInput = JSON.stringify(JSON.parse(cleanedInput));
+  if (editorView.value) {
+    editorView.value.dispatch({
+      changes: {
+        from: 0,
+        to: editorView.value.state.doc.length,
+        insert: cleanedInput,
+      },
+    });
+    globalDataStore.updateGlobalValue('');
+  }
+};
+
+// 美化
+const beautifyData = () => {
+  let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+  cleanedInput = JSON.stringify(JSON.parse(cleanedInput), null, 2);
+  if (editorView.value) {
+    editorView.value.dispatch({
+      changes: {
+        from: 0,
+        to: editorView.value.state.doc.length,
+        insert: cleanedInput,
+      },
+    });
+    globalDataStore.updateGlobalValue('');
   }
 };
 
@@ -389,7 +424,7 @@ onUnmounted(() => {
 }
 
 .controls button {
-  background-color: #007bff;
+  background-color: #2b3b4c;
   color: white;
   border: none;
   cursor: pointer;

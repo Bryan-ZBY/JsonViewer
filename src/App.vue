@@ -40,7 +40,7 @@ const scrollToTop = () => {
   right: 20px;
   bottom: 20px;
   padding: 10px 20px;
-  background-color: #007bff;
+  background-color: #2b3b4c;
   color: white;
   border: none;
   border-radius: 4px;
