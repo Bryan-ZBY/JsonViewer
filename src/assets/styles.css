@@ -22,14 +22,25 @@ body.dark-mode {
   color: #000000;
 }
 
+div .cm-searchMatch span {
+    background-color: yellow;
+  color: black;
+}
+
 div .ͼ13 {
     color: #b1f6ac;
 }
 
 
-div .cm-content {
-    color: #ffbefa;
-    background-color: #000000;
+div div .cm-activeLine.cm-line {
+  background: #010f30;
+}
+div div .ͼp .cm-activeLine.cm-line{
+  background-color: #3561b88f;
+}
+
+.cm-scroller {
+  background: black;
 }
 
 /* 滚动条整体样式 */

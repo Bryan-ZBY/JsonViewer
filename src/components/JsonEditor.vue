@@ -31,8 +31,8 @@ const props = defineProps<{
   overflow: auto; /* 确保内容超出时可以滚动 */
   resize: both; /* 允许水平和垂直拖动调整大小 */
   max-width: 100%; /* 最大宽度 */
-  max-height: 800px;
-  min-width: 200px; /* 最小宽度，防止拖得太小 */
+  max-height: 80vh;
+  min-width: 500px; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
 }
 

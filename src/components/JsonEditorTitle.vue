@@ -11,15 +11,26 @@
           </svg>
         </span>
       </div>
-      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="tgfbvud" data-popupid="tgfbvud">
+      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="tgfbvud" data-popupid="tgfbvud" @click="emit('show-help-modal')">
         <span role="img" class="semi-icon semi-icon-default text-14">
-          <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24">
-            <path fill="currentColor" fill-rule="evenodd" d="M4 4a1 1 0 0 1 1 1v3a3 3 0 0 0 3 3h11.086l-5.293-5.293a1 1 0 0 1 1.414-1.414l7 7a1 1 0 0 1 0 1.414l-7 7a1 1 0 0 1-1.414-1.414L19.086 13H8a5 5 0 0 1-5-5V5a1 1 0 0 1 1-1" clip-rule="evenodd">
-            </path>
+          <svg viewBox="0 0 24 24" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1">
+            <circle cx="12" cy="12" r="10"> </circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"> </path>
+            <line x1="12" y1="17" x2="12.01" y2="17"> </line>
           </svg>
         </span>
       </div>
-      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="m6ms5a9" data-popupid="m6ms5a9">
+      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="m6ms5a9" data-popupid="m6ms5a9" @click="emit('to-small')">
+        <span role="img" class="semi-icon semi-icon-default text-14">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1">
+            <polyline points="4 14 10 14 10 20"></polyline>
+            <polyline points="20 10 14 10 14 4"></polyline>
+            <line x1="14" y1="10" x2="21" y2="3"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </span>
+      </div>
+      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="m6ms5a9" data-popupid="m6ms5a9" @click="toggleDarkMode">
         <span role="img" class="semi-icon semi-icon-default text-14">
           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24">
             <path fill="currentColor" d="M12 .5a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1">
@@ -31,7 +42,7 @@
           </svg>
         </span>
       </div>
-      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="mg29vc1" data-popupid="mg29vc1">
+      <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="mg29vc1" data-popupid="mg29vc1" @click="emit('to-big')">
         <span role="img" class="semi-icon semi-icon-default text-14">
           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22 3v7a1 1 0 1 1-2 0V4h-6a1 1 0 1 1 0-2h7a1 1 0 0 1 1 1M11.005 21a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-7a1 1 0 0 1 2.002 0v6h6.003a1 1 0 0 1 1 1">
@@ -52,6 +63,12 @@ const props = defineProps<{
   editorView: EditorView;
 }>();
 
+const emit = defineEmits<{
+  (e: 'show-help-modal'): void;
+  (e: 'to-big'): void;
+  (e: 'to-small'): void;
+}>();
+
 // 复制代码到剪贴板
 const copyCode = () => {
   if (props.editorView) {
@@ -63,6 +80,11 @@ const copyCode = () => {
     });
   }
 };
+
+const toggleDarkMode = () => {
+  document.body.classList.toggle('dark-mode');
+};
+
 </script>
 
 <style scoped>
@@ -89,7 +111,7 @@ const copyCode = () => {
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  gap: 8px;
+  gap: 12px;
   justify-content: space-between;
 }
 

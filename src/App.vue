@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Controls @render-json="renderJson" @search="performSearch" @collapse-all="collapseAll" @toggle-dark-mode="toggleDarkMode" />
+    <Controls @render-json="renderJson" @search="performSearch" @collapse-all="collapseAll" />
     <JsonViewer :json-data="jsonData" parent-key="" ref="jsonViewerRef" />
     <button id="back-to-top" class="fixed-button" @click="scrollToTop">回到顶部</button>
     <KeyPressDisplay />
@@ -27,10 +27,6 @@ const performSearch = (searchText: string) => {
 
 const collapseAll = () => {
   jsonViewerRef.value?.collapseAll();
-};
-
-const toggleDarkMode = () => {
-  document.body.classList.toggle('dark-mode');
 };
 
 const scrollToTop = () => {

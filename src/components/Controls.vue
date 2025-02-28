@@ -1,17 +1,19 @@
 <template>
   <div class="controls-wrapper">
     <div class="controls">
-      <button class="search-wrapper" @click="showHelpModal = true">帮助</button>
-      <button @click="emit('toggle-dark-mode')">主题</button>
-      <button @click="toggleFullScreen">全屏</button> <!-- 新增全屏按钮 -->
 
       <div class="inputDiv">
-        <div class="editor-container">
-          <JsonEditorTitle :editor-view="editorView" />
+        <div class="editor-container" :style="{ width: boxWidth, height: boxHeight }">
+          <JsonEditorTitle :editor-view="editorView"
+            @show-help-modal="showHelpModal = true"
+            @to-small="toSmall"
+            @to-big="toBig"
+          />
           <div ref="editorRef" style="height: calc(100% - 40px)"></div>
         </div>
       </div>
 
+    <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
       <button @click="doFetch">请求数据</button>
@@ -61,7 +63,30 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
 const showHelpModal = ref(false);
-const isFullScreen = ref(false); // 跟踪全屏状态
+
+const boxHeight = ref("300px");
+const boxWidth = ref("60vw");
+
+const toSmall = () => {
+  if(boxHeight.value != "100px"){
+    boxHeight.value = "100px";
+    boxWidth.value = "300px";
+  }else{
+    boxHeight.value = "300px";
+    boxWidth.value = "60vw";
+  }
+}
+
+const toBig = () => {
+  if(boxHeight.value != "80vh"){
+    boxHeight.value = "80vh";
+    boxWidth.value = "100%";
+  }else{
+    boxHeight.value = "300px";
+    boxWidth.value = "60vw";
+  }
+}
+
 
 const globalDataStore = useDataStore();
 
@@ -147,7 +172,7 @@ onMounted(() => {
   window.addEventListener('keydown', (e) => {
     if (e.key === 'F11') {
       e.preventDefault();
-      toggleFullScreen();
+      toBig();
     }
   });
 });
@@ -183,35 +208,6 @@ const clearEditor = () => {
     });
     globalDataStore.updateGlobalValue('');
   }
-};
-
-// 全屏切换方法
-const toggleFullScreen = () => {
-  const editorContainer = editorRef.value;
-  if (!editorContainer || !editorView.value) return;
-
-  if (isFullScreen.value) {
-    // 退出全屏，恢复默认样式
-    editorContainer.style.position = '';
-    editorContainer.style.top = '';
-    editorContainer.style.left = '';
-    editorContainer.style.width = '';
-    editorContainer.style.height = '';
-    editorContainer.style.zIndex = '';
-    editorContainer.style.backgroundColor = '';
-  } else {
-    // 进入全屏
-    editorContainer.style.position = 'fixed';
-    editorContainer.style.top = '0';
-    editorContainer.style.left = '0';
-    editorContainer.style.width = '100vw';
-    editorContainer.style.height = '100vh';
-    editorContainer.style.zIndex = '9999';
-    editorContainer.style.backgroundColor = '#fff'; // 可根据主题调整
-  }
-
-  isFullScreen.value = !isFullScreen.value;
-  editorView.value.requestMeasure(); // 更新 CodeMirror 布局
 };
 
 const doFetch = async () => {
@@ -291,7 +287,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
       searchInputRef.value.blur();
     }
     showHelpModal.value = false;
-    if (isFullScreen.value) toggleFullScreen(); // Esc 退出全屏（可选）
   }
 
   if (isInput()) {
@@ -301,14 +296,6 @@ const handleKeyDown = (event: KeyboardEvent) => {
   if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
     event.preventDefault();
     showHelpModal.value = true;
-  }
-
-  if (event.key === '/' || event.key === 'f') {
-    event.preventDefault();
-    if (searchInputRef.value) {
-      searchInputRef.value.focus();
-      searchInputRef.value.select();
-    }
   }
 
   if (event.key === 'g') {
@@ -423,17 +410,17 @@ onUnmounted(() => {
 }
 
 .editor-container {
-  width: 100%; /* 初始宽度 */
+  width: 800px; /* 初始宽度 */
   height: 300px; /* 初始高度 */
-  border: 1px solid #ccc;
+  border: 1px solid #657efd;
   border-radius: 10px;
   overflow: auto; /* 确保内容超出时可以滚动 */
   resize: both; /* 允许水平和垂直拖动调整大小 */
   max-width: 100%; /* 最大宽度 */
-  max-height: 800px;
-  min-width: 200px; /* 最小宽度，防止拖得太小 */
+  max-height: 80vh;
+  min-width: 600px; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
-  transition: all 0.3s ease; /* 平滑过渡 */
+  /* transition: all 0.3s ease;  */
 }
 
 /* 确保 CodeMirror 的内容区域适应容器大小 */
