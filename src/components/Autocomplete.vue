@@ -9,7 +9,7 @@
       class="input-box"
       ref="inputRef"
     />
-    <ul v-if="showSuggestions" class="suggestions-list">
+    <ul v-if="showSuggestions" v-show="filteredData.length" class="suggestions-list">
       <li
         v-for="(item, index) in filteredData"
         :key="index"
@@ -23,9 +23,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, defineEmits } from 'vue';
+import { ref, computed, onMounted, defineEmits, watch } from 'vue';
 import { useDataStore } from '../store/GlobalData';
-import { defaultJson, getUniqueKeys, getArrayMethods } from '../utils/JsonUtils';
+import { defaultJson, getUniqueKeys, getArrayMethods, extractKeys } from '../utils/JsonUtils';
 
 const emit = defineEmits<{
   (e: 'filter-json', searchText: string): void;
@@ -38,20 +38,30 @@ const showSuggestions = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const globalDataStore = useDataStore();
-const cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
-const jsonData = JSON.parse(cleanedInput);
-const allKeys = ref(getUniqueKeys(jsonData));
+const allKeys = ref<string[]>([]);
+const allRealKeys = ref<string[]>([]);
+
+// 提取括号之前的数据
+function getPartBeforeBracket(str: string): string {
+  const bracketIndex = str.search(/[)}]/);
+  return bracketIndex === -1 ? str : str.slice(0, bracketIndex);
+}
 
 // 计算过滤后的建议项
 const filteredData = computed(() => {
   if (!inputText.value) return [];
+  if (!inputText.value.includes('.')) {
+    return [
+      'item'
+    ];
+  }
 
   const parts = inputText.value.split('.');
   const lastPart = parts.pop() || ''; // 当前正在输入的部分
   const prefix = parts.length ? `${parts.join('.')}.` : 'item.'; // 当前路径前缀
 
   // 检查是否可能是数组路径
-  const arrayMethods = getArrayMethods(jsonData, parts.join('.')) || [];
+  const arrayMethods = getArrayMethods(JSON.parse(globalDataStore.jsonValue || JSON.stringify(defaultJson)), parts.join('.')) || [];
 
   // 普通键补全
   const keySuggestions = allKeys.value
@@ -65,12 +75,20 @@ const filteredData = computed(() => {
     const methodSuggestions = arrayMethods.filter((method) =>
       method.toLowerCase().startsWith(lastPart.toLowerCase())
     );
-    return [...methodSuggestions, ...keySuggestions].filter(
+    return [...methodSuggestions].filter(
       (v, i, self) => self.indexOf(v) === i
     ); // 合并并去重
   }
 
-  return keySuggestions;
+  if (keySuggestions.length) {
+    return keySuggestions;
+  }
+
+  return allRealKeys.value
+    .filter((key: string) => {
+      const processedLastPart = getPartBeforeBracket(lastPart).toLowerCase();
+      return key.toLowerCase().startsWith(processedLastPart);
+    });
 });
 
 // 输入事件处理
@@ -83,12 +101,18 @@ const handleInput = () => {
 const handleKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
     event.preventDefault();
+    if (currentFocus.value >= 0) {
+      applySuggestion(filteredData.value[currentFocus.value]);
+      return;
+    }
     emit('filter-json', inputText.value);
-    return;
-  }
-
-  if (event.key === 'Tab' && filteredData.value.length > 0) {
+  } else if (event.key === 'Tab' && filteredData.value.length > 0) {
     event.preventDefault();
+    if (currentFocus.value >= 0) {
+      applySuggestion(filteredData.value[currentFocus.value]);
+      return;
+    }
+
     applySuggestion(filteredData.value[0]);
   } else if (event.key === 'ArrowDown') {
     event.preventDefault();
@@ -105,16 +129,24 @@ const handleKeydown = (event: KeyboardEvent) => {
 // 应用补全建议并设置光标位置
 const applySuggestion = (suggestion: string) => {
   const parts = inputText.value.split('.');
-  parts.pop(); // 移除当前输入的最后一个部分
-  const prefix = parts.length ? `${parts.join('.')}.` : 'item.';
+  let last = parts.pop(); // 移除当前输入的最后一个部分
+  const prefix = parts.length ? `${parts.join('.')}.` : '';
   inputText.value = prefix + suggestion;
+
+  function extractPartAfterBracket(str: string): string {
+    const match = str.match(/[)}].*/);
+    return match? match[0] : '';
+  }
+
+  const length = inputText.value.length;
 
   // 设置光标位置到补全内容末尾
   requestAnimationFrame(() => {
     inputRef.value?.focus();
-    inputRef.value?.setSelectionRange(inputText.value.length, inputText.value.length);
+    inputRef.value?.setSelectionRange(length, length);
   });
 
+  inputText.value += extractPartAfterBracket(last || '');
   showSuggestions.value = false;
 };
 
@@ -122,6 +154,15 @@ const applySuggestion = (suggestion: string) => {
 const selectItem = (item: string) => {
   applySuggestion(item);
 };
+
+// 监听 globalDataStore.jsonValue 的变化
+watch(() => globalDataStore.jsonValue, (newValue) => {
+  const cleanedInput = newValue.trim();
+  if(!cleanedInput) return;
+  const jsonData = JSON.parse(cleanedInput);
+  allKeys.value = getUniqueKeys(jsonData);
+  allRealKeys.value = extractKeys(jsonData);
+}, { immediate: true });
 </script>
 
 <style scoped>
@@ -157,7 +198,8 @@ const selectItem = (item: string) => {
   position: absolute;
   top: 100%; /* 确保列表从输入框底部开始 */
   left: 10%; /* 与输入框对齐 */
-  width: 80%; /* 与输入框宽度一致 */
+  width: 20%;
+  min-width: 200px;
   max-height: 200px;
   overflow-y: auto;
   margin-top: 4px;
@@ -170,10 +212,11 @@ const selectItem = (item: string) => {
   z-index: 1000;
   opacity: 0;
   transform: translateY(-10px);
-  animation: slideIn 0.2s ease-out forwards;
+  /* 修改动画时间为 0.3s */
+  animation: slideIn 0.3s ease-out forwards;
 }
 
-/* 动画效果 */
+/* 动画效果 - 渐入 */
 @keyframes slideIn {
   to {
     opacity: 1;
@@ -184,10 +227,12 @@ const selectItem = (item: string) => {
 /* 建议项样式 */
 .suggestions-list li {
   padding: 8px 16px;
-  color: #e5e7eb; /* 浅灰色文字 */
+  color: #e5e7eb;
   cursor: pointer;
+  line-height: 12px;
+  font-size: 14px;
   transition: all 0.2s ease;
-  border-bottom: 1px solid #2d3748;
+  border-bottom: 1px solid #303846;
 }
 
 .suggestions-list li:last-child {
@@ -200,9 +245,12 @@ const selectItem = (item: string) => {
 }
 
 .suggestions-list li.active {
-  background-color: #3b82f6;
+  font-size: 16px;
   color: #fff;
   font-weight: 500;
+  transform: translateY(-3px);
+  box-shadow: rgb(0, 0, 0) 2px 2px 5px inset;
+  background: rgb(30, 38, 62);
 }
 
 /* 自定义滚动条样式 */

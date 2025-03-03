@@ -76,7 +76,14 @@ const filterJson = (fil: any) => {
   let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
 
   try {
-    const code = fil.replace(/item/, 'return JSON.parse(input)');
+    let code = fil.replace(/item/, 'return JSON.parse(input)');
+    code = code.replace(".Where(", '.filter(');
+    code = code.replace(".Select(", '.map(');
+    code = code.replace(".SelectMany(", '.flatMap(');
+    code = code.replace(".FirstOrDefault(", '.find(');
+    code = code.replace(".Some(", '.any(');
+    code = code.replace(".All(", '.every(');
+
     const func = new Function('input', code);
     const result = func(cleanedInput);
 
@@ -321,7 +328,7 @@ const isTextareaFocused = () => {
 };
 
 const isInputFocused = () => {
-  return document.activeElement === searchInputRef.value;
+  return document.activeElement === searchInputRef.value || document.activeElement?.tagName === "INPUT";
 };
 
 const isInput = () => {

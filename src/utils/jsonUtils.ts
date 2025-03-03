@@ -84,21 +84,15 @@ export const defaultJson: JsonData = {
   }
 };
 
-export const filterData: string[] = [
-  "item",
+const arrayMethods = [
   "concat", "copyWithin", "entries", "every", "fill", "filter",
   "find", "findIndex", "flat", "flatMap", "forEach", "includes",
   "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push",
   "reduce", "reduceRight", "reverse", "shift", "slice", "some",
-  "sort", "splice", "toLocaleString", "toString", "unshift", "values",
-  "Object.assign", "Object.create", "Object.defineProperties", "Object.defineProperty", "Object.entries",
-  "Object.freeze", "Object.fromEntries", "Object.getOwnPropertyDescriptor", "Object.getOwnPropertyDescriptors", "Object.getOwnPropertyNames",
-  "Object.getOwnPropertySymbols", "Object.getPrototypeOf", "Object.is", "Object.isExtensible", "Object.isFrozen",
-  "Object.isSealed", "Object.keys", "Object.preventExtensions", "Object.seal", "Object.setPrototypeOf", "Object.values",
-  "JSON.parse", "JSON.stringify",
-  "function", "const", "var"
-];
+  "sort", "splice", "toLocaleString", "toString", "unshift",
 
+  "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All"
+];
 
 export function generateSummary(data: JsonData): string {
   if (Array.isArray(data)) {
@@ -134,10 +128,6 @@ export function getUniqueKeys(jsonObj: any, prefix = 'item'): string[] {
 
 // 新增：检查路径是否为数组，并返回数组方法
 export function getArrayMethods(jsonObj: any, path: string): string[] | null {
-  const arrayMethods = [
-    'map', 'filter', 'forEach', 'reduce', 'find', 'some', 'every', 'sort', 'slice'
-  ];
-
   function resolvePath(obj: any, parts: string[]): any {
     let current = obj;
     for (const part of parts) {
@@ -155,41 +145,22 @@ export function getArrayMethods(jsonObj: any, path: string): string[] | null {
   return Array.isArray(value) ? arrayMethods : null;
 }
 
-export function getUniqueKeys2(jsonObj: any, prefix = 'item'): string[] {
-  const keys: Set<string> = new Set();
-
-  function traverse(obj: any, currentPath: string) {
-    if (typeof obj !== 'object' || obj === null) return;
-
-    for (const key in obj) {
-      const newPath = `${currentPath}.${key}`;
-      keys.add(newPath);
-      traverse(obj[key], newPath);
-    }
-  }
-
-  traverse(jsonObj, prefix);
-  return Array.from(keys);
-}
-
-export function getUniqueKeys1(obj: any) {
-  const keySet = new Set(filterData); // 使用 Set 去重
-  
-  function extractKeys(value: any) {
-    if (typeof value === 'object' && value !== null) {
-      if (Array.isArray(value)) {
-        value.forEach(item => extractKeys(item)); // 处理数组中的每个元素
-      } else {
-        for (let key in value) {
-          if (value.hasOwnProperty(key)) {
-            keySet.add(key); // 添加到 Set 中，自动去重
-            extractKeys(value[key]); // 递归处理嵌套对象
-          }
+export function extractKeys(obj: any, keySet = new Set()) {
+  if (typeof obj === 'object' && obj!== null) {
+    if (Array.isArray(obj)) {
+      // 只处理数组的第一个元素
+      if (obj.length > 0) {
+        extractKeys(obj[0], keySet);
+      }
+    } else {
+      // 处理对象
+      for (const key in obj) {
+        if (!keySet.has(key)) {
+          keySet.add(key);
+          extractKeys(obj[key], keySet);
         }
       }
     }
   }
-  
-  extractKeys(obj);
-  return Array.from(keySet); // 将 Set 转为数组返回
+  return [...keySet, ...arrayMethods];
 }
