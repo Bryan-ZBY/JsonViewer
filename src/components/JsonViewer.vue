@@ -6,9 +6,9 @@
         @mouseenter="showCopyButton($event, item)">
         <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
           <span v-show="globalDataStore.selectedKey === item.fullKey">
-            <button class="copy-button2"
+            <button class="copy-button2" style="user-select:none"
               @click.stop="copyKeyToClipboard(item.value, item.key)">{{ copyKeyData }}</button>
-            <button class="copy-button"
+            <button class="copy-button" style="user-select:none"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </span>
 
@@ -218,7 +218,7 @@ const showCopyButton = (event: Event, item: any) => {
 };
 
 const copyKeyToClipboard = (value: any, key: string) => {
-  const text = JSON.stringify(key);
+  const text = key;
   navigator.clipboard.writeText(text).then(() => {
     copyKeyData.value = 'OK!';
     setTimeout(() => (copyKeyData.value = 'Key'), 1500);
@@ -319,6 +319,10 @@ ul {
   margin: 0;
 }
 
+.selectable {
+  user-select: text; /* 明确允许文本选择 */
+}
+
 .json-key {
   color: blue;
 }
@@ -388,7 +392,6 @@ ul {
 
 .eleli {
   cursor: pointer;
-  user-select: none;
   line-height: 20px;
   margin: 0;
   padding: 0;
@@ -449,6 +452,9 @@ ul {
   transition: background-color 0.3s;
 }
 
+.copy-button2:hover {
+  background-color: #0056b3;
+}
 .copy-button:hover {
   background-color: #0056b3;
 }

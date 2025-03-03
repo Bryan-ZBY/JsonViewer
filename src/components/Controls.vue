@@ -14,17 +14,6 @@
       </div>
       <div class="inputDiv">
         <Autocomplete @filter-json="filterJson" style="width: 100%; "/>
-        <!-- <input -->
-        <!--   v-model="searchInput" -->
-        <!--   ref="searchInputRef" -->
-        <!--   type="text" -->
-        <!--   style="width: 100%;" -->
-        <!--   placeholder="已知当前 JSON 为 item, 请用 item.func... 执行过滤函数" -->
-        <!--   @keydown.enter="handleEnter" -->
-        <!--   @keydown.up="handleArrowUp" -->
-        <!--   @keydown.down="handleArrowDown" -->
-        <!--   @focus="logFocus" -->
-        <!-- /> -->
       </div>
       <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
       <button @click="emitRenderJson">加载</button>
@@ -42,7 +31,6 @@
           @keydown.enter="handleEnter"
           @keydown.up="handleArrowUp"
           @keydown.down="handleArrowDown"
-          @focus="logFocus"
         />
         <button @click="emit('collapse-all')">收起</button>
       </div>
@@ -88,7 +76,7 @@ const filterJson = (fil: any) => {
   let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
 
   try {
-    const code = fil.value.replace('item', 'return JSON.parse(input)');
+    const code = fil.replace(/item/, 'return JSON.parse(input)');
     const func = new Function('input', code);
     const result = func(cleanedInput);
 
@@ -178,8 +166,6 @@ onMounted(() => {
       // 验证选择范围是否有效
       const from = Math.max(0, Math.min(selection.from, docLength));
       const to = Math.max(from, Math.min(selection.to, docLength));
-
-      console.log('Before dispatch:', { from, to, docLength, text });
 
       if (from !== to || (from === 0 && to === docLength)) {
         // 有选中文本，或全选的情况，覆盖选中区域
@@ -328,10 +314,6 @@ const emitSearch = () => {
     historyIndex.value = -1;
     emit('search', trimmedInput);
   }
-};
-
-const logFocus = (event: FocusEvent) => {
-  console.log('Input focused:', event.target);
 };
 
 const isTextareaFocused = () => {

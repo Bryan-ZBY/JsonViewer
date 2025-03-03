@@ -84,6 +84,22 @@ export const defaultJson: JsonData = {
   }
 };
 
+export const filterData: string[] = [
+  "item",
+  "concat", "copyWithin", "entries", "every", "fill", "filter",
+  "find", "findIndex", "flat", "flatMap", "forEach", "includes",
+  "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push",
+  "reduce", "reduceRight", "reverse", "shift", "slice", "some",
+  "sort", "splice", "toLocaleString", "toString", "unshift", "values",
+  "Object.assign", "Object.create", "Object.defineProperties", "Object.defineProperty", "Object.entries",
+  "Object.freeze", "Object.fromEntries", "Object.getOwnPropertyDescriptor", "Object.getOwnPropertyDescriptors", "Object.getOwnPropertyNames",
+  "Object.getOwnPropertySymbols", "Object.getPrototypeOf", "Object.is", "Object.isExtensible", "Object.isFrozen",
+  "Object.isSealed", "Object.keys", "Object.preventExtensions", "Object.seal", "Object.setPrototypeOf", "Object.values",
+  "JSON.parse", "JSON.stringify",
+  "function", "const", "var"
+];
+
+
 export function generateSummary(data: JsonData): string {
   if (Array.isArray(data)) {
     return `[${data.map(item => JSON.stringify(item)).join(', ')}]`;
@@ -97,4 +113,83 @@ export function generateSummary(data: JsonData): string {
     return `{${entries.join(', ')}}`;
   }
   return JSON.stringify(data);
+}
+
+export function getUniqueKeys(jsonObj: any, prefix = 'item'): string[] {
+  const keys: Set<string> = new Set();
+
+  function traverse(obj: any, currentPath: string) {
+    if (typeof obj !== 'object' || obj === null) return;
+
+    for (const key in obj) {
+      const newPath = `${currentPath}.${key}`;
+      keys.add(newPath);
+      traverse(obj[key], newPath);
+    }
+  }
+
+  traverse(jsonObj, prefix);
+  return Array.from(keys);
+}
+
+// 新增：检查路径是否为数组，并返回数组方法
+export function getArrayMethods(jsonObj: any, path: string): string[] | null {
+  const arrayMethods = [
+    'map', 'filter', 'forEach', 'reduce', 'find', 'some', 'every', 'sort', 'slice'
+  ];
+
+  function resolvePath(obj: any, parts: string[]): any {
+    let current = obj;
+    for (const part of parts) {
+      if (current && typeof current === 'object' && part in current) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
+  }
+
+  const parts = path.split('.').slice(1); // 移除 'item' 前缀
+  const value = resolvePath(jsonObj, parts);
+  return Array.isArray(value) ? arrayMethods : null;
+}
+
+export function getUniqueKeys2(jsonObj: any, prefix = 'item'): string[] {
+  const keys: Set<string> = new Set();
+
+  function traverse(obj: any, currentPath: string) {
+    if (typeof obj !== 'object' || obj === null) return;
+
+    for (const key in obj) {
+      const newPath = `${currentPath}.${key}`;
+      keys.add(newPath);
+      traverse(obj[key], newPath);
+    }
+  }
+
+  traverse(jsonObj, prefix);
+  return Array.from(keys);
+}
+
+export function getUniqueKeys1(obj: any) {
+  const keySet = new Set(filterData); // 使用 Set 去重
+  
+  function extractKeys(value: any) {
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value)) {
+        value.forEach(item => extractKeys(item)); // 处理数组中的每个元素
+      } else {
+        for (let key in value) {
+          if (value.hasOwnProperty(key)) {
+            keySet.add(key); // 添加到 Set 中，自动去重
+            extractKeys(value[key]); // 递归处理嵌套对象
+          }
+        }
+      }
+    }
+  }
+  
+  extractKeys(obj);
+  return Array.from(keySet); // 将 Set 转为数组返回
 }

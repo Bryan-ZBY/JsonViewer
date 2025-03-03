@@ -140,7 +140,6 @@ function GenerateEditorState(){
           // 当内容变化时，获取最新代码
           const newCode = update.state.doc.toString();
           globalDataStore.updateJsonValue(newCode);
-          console.log('代码更新:', newCode);
         }
       }),
     ],

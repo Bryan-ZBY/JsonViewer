@@ -1,4 +1,3 @@
-<!-- AutoComplete.vue -->
 <template>
   <div class="autocomplete">
     <input
@@ -24,109 +23,105 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, defineProps, defineExpose, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, defineEmits } from 'vue';
+import { useDataStore } from '../store/GlobalData';
+import { defaultJson, getUniqueKeys, getArrayMethods } from '../utils/JsonUtils';
+
 const emit = defineEmits<{
   (e: 'filter-json', searchText: string): void;
 }>();
 
-
-
 // 状态定义
-const inputText = ref('')
-const currentFocus = ref(-1)
-const showSuggestions = ref(false)
-const inputRef = ref(null) // 添加对 input 的引用
+const inputText = ref('');
+const currentFocus = ref(-1);
+const showSuggestions = ref(false);
+const inputRef = ref<HTMLInputElement | null>(null);
 
-// 示例数据
-const data = ref([
-  "item",
-  "concat", "copyWithin", "entries", "every", "fill", "filter",
-  "find", "findIndex", "flat", "flatMap", "forEach", "includes",
-  "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push",
-  "reduce", "reduceRight", "reverse", "shift", "slice", "some",
-  "sort", "splice", "toLocaleString", "toString", "unshift", "values",
-  "Object.assign", "Object.create", "Object.defineProperties", "Object.defineProperty", "Object.entries",
-  "Object.freeze", "Object.fromEntries", "Object.getOwnPropertyDescriptor", "Object.getOwnPropertyDescriptors", "Object.getOwnPropertyNames",
-  "Object.getOwnPropertySymbols", "Object.getPrototypeOf", "Object.is", "Object.isExtensible", "Object.isFrozen",
-  "Object.isSealed", "Object.keys", "Object.preventExtensions", "Object.seal", "Object.setPrototypeOf", "Object.values",
-  "JSON.parse", "JSON.stringify",
-  "function", "const", "var"
-])
+const globalDataStore = useDataStore();
+const cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+const jsonData = JSON.parse(cleanedInput);
+const allKeys = ref(getUniqueKeys(jsonData));
 
-// 过滤后的建议项
+// 计算过滤后的建议项
 const filteredData = computed(() => {
-  const lastDotIndex = inputText.value.lastIndexOf('.')
-  if (lastDotIndex === -1) {
-    return data.value.filter(item =>
-      item.toLowerCase().startsWith(inputText.value.toLowerCase())
-    )
+  if (!inputText.value) return [];
+
+  const parts = inputText.value.split('.');
+  const lastPart = parts.pop() || ''; // 当前正在输入的部分
+  const prefix = parts.length ? `${parts.join('.')}.` : 'item.'; // 当前路径前缀
+
+  // 检查是否可能是数组路径
+  const arrayMethods = getArrayMethods(jsonData, parts.join('.')) || [];
+
+  // 普通键补全
+  const keySuggestions = allKeys.value
+    .filter((key) => key.startsWith(prefix))
+    .map((key) => key.slice(prefix.length).split('.')[0])
+    .filter((key) => key.toLowerCase().startsWith(lastPart.toLowerCase()))
+    .filter((v, i, self) => self.indexOf(v) === i);
+
+  // 如果是数组路径，且 lastPart 为空或匹配数组方法，则添加数组方法
+  if (arrayMethods.length > 0) {
+    const methodSuggestions = arrayMethods.filter((method) =>
+      method.toLowerCase().startsWith(lastPart.toLowerCase())
+    );
+    return [...methodSuggestions, ...keySuggestions].filter(
+      (v, i, self) => self.indexOf(v) === i
+    ); // 合并并去重
   }
 
-  let searchText = inputText.value.slice(lastDotIndex + 1)
-  searchText = searchText.replace(/[)}\]]/g, '')
-  return data.value.filter(item =>
-    item.toLowerCase().startsWith(searchText.toLowerCase())
-  )
-})
+  return keySuggestions;
+});
 
 // 输入事件处理
 const handleInput = () => {
-  showSuggestions.value = inputText.value.length > 0
-  currentFocus.value = -1
-}
+  showSuggestions.value = inputText.value.length > 0;
+  currentFocus.value = -1;
+};
 
 // 键盘事件处理
-const handleKeydown = (event) => {
-if (event.key === 'Enter') {
-    event.preventDefault()
-    emit('filter-json', inputText);
+const handleKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    emit('filter-json', inputText.value);
     return;
   }
 
   if (event.key === 'Tab' && filteredData.value.length > 0) {
-    event.preventDefault()
-    applySuggestion(filteredData.value[0])
+    event.preventDefault();
+    applySuggestion(filteredData.value[0]);
   } else if (event.key === 'ArrowDown') {
-    event.preventDefault()
-    currentFocus.value = (currentFocus.value + 1) % filteredData.value.length
+    event.preventDefault();
+    currentFocus.value = (currentFocus.value + 1) % filteredData.value.length;
   } else if (event.key === 'ArrowUp') {
-    event.preventDefault()
+    event.preventDefault();
     currentFocus.value =
-      (currentFocus.value - 1 + filteredData.value.length) % filteredData.value.length
-  }  else if (event.key === '.') {
-    showSuggestions.value = true
+      (currentFocus.value - 1 + filteredData.value.length) % filteredData.value.length;
+  } else if (event.key === '.') {
+    showSuggestions.value = true;
   }
-}
+};
 
 // 应用补全建议并设置光标位置
-const applySuggestion = (suggestion) => {
-  const lastDotIndex = inputText.value.lastIndexOf('.')
-  let cursorPosition
+const applySuggestion = (suggestion: string) => {
+  const parts = inputText.value.split('.');
+  parts.pop(); // 移除当前输入的最后一个部分
+  const prefix = parts.length ? `${parts.join('.')}.` : 'item.';
+  inputText.value = prefix + suggestion;
 
-  if (lastDotIndex !== -1) {
-    const beforeDot = inputText.value.slice(0, lastDotIndex + 1)
-    const afterDot = inputText.value.slice(lastDotIndex + 1)
-    const remainingText = afterDot.replace(/^[^)}\]]*/, '') // 保留括号等符号
-    inputText.value = beforeDot + suggestion + remainingText
-    cursorPosition = (beforeDot + suggestion).length // 光标定位到补全内容后
-  } else {
-    inputText.value = suggestion
-    cursorPosition = suggestion.length
-  }
-
-  // 设置光标位置
+  // 设置光标位置到补全内容末尾
   requestAnimationFrame(() => {
-    inputRef.value.focus()
-    inputRef.value.setSelectionRange(cursorPosition, cursorPosition)
-  })
+    inputRef.value?.focus();
+    inputRef.value?.setSelectionRange(inputText.value.length, inputText.value.length);
+  });
 
-  showSuggestions.value = false
-}
+  showSuggestions.value = false;
+};
 
 // 选择建议项
-const selectItem = (item) => {
-  applySuggestion(item)
-}
+const selectItem = (item: string) => {
+  applySuggestion(item);
+};
 </script>
 
 <style scoped>
@@ -135,14 +130,8 @@ const selectItem = (item) => {
   position: relative;
   width: 300px;
   margin: 50px auto;
-
-  width: 100%;
-  display: flex
-    ;
-  align-content: center;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
@@ -150,9 +139,9 @@ const selectItem = (item) => {
 .input-box {
   width: 80%;
   padding: 10px;
-background: black;
-    color: cornsilk;
-    font-size: 14px;
+  background: black;
+  color: cornsilk;
+  font-size: 14px;
   border: 2px solid #8191e1;
   border-radius: 8px;
   outline: none;
@@ -166,52 +155,72 @@ background: black;
 /* 建议列表样式 */
 .suggestions-list {
   position: absolute;
-  top: 41px;
-  width: 20%;
-  max-height: 150px;
+  top: 100%; /* 确保列表从输入框底部开始 */
+  left: 10%; /* 与输入框对齐 */
+  width: 80%; /* 与输入框宽度一致 */
+  max-height: 200px;
   overflow-y: auto;
-  margin-top: 5px;
-  padding: 0;
+  margin-top: 4px;
+  padding: 8px 0;
   list-style: none;
-  border: 1px solid #ccc;
+  background: #1a1a1a; /* 深色背景 */
+  border: 1px solid #3b82f6;
   border-radius: 8px;
-  background-color: #fff;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: slideIn 0.2s ease-out forwards;
+}
+
+/* 动画效果 */
+@keyframes slideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 建议项样式 */
 .suggestions-list li {
-  padding: 10px;
+  padding: 8px 16px;
+  color: #e5e7eb; /* 浅灰色文字 */
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #2d3748;
+}
+
+.suggestions-list li:last-child {
+  border-bottom: none;
 }
 
 .suggestions-list li:hover {
-  background-color: #f3f4f6;
+  background-color: #2d3748; /* 悬停时深灰色背景 */
+  color: #fff;
 }
 
 .suggestions-list li.active {
   background-color: #3b82f6;
   color: #fff;
+  font-weight: 500;
 }
 
 /* 自定义滚动条样式 */
 .suggestions-list::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .suggestions-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: #2d3748;
+  border-radius: 3px;
 }
 
 .suggestions-list::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 4px;
+  background: #8191e1;
+  border-radius: 3px;
 }
 
 .suggestions-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #3b82f6;
 }
 </style>
