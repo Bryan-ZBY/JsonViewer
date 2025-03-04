@@ -22,6 +22,7 @@
       <!-- <button @click="doJS">执行</button> -->
       <button @click="zipData">压缩</button>
       <button @click="beautifyData">美化</button>
+      <button @click="copyResult">复制</button>
 
       <div class="search-wrapper">
         <input
@@ -222,8 +223,18 @@ const zipData = () => {
         insert: cleanedInput,
       },
     });
-    globalDataStore.updateGlobalValue('');
   }
+};
+
+
+// 复制代码到剪贴板
+const copyResult = () => {
+  const code = globalDataStore.showValue;
+  navigator.clipboard.writeText(code).then(() => {
+    console.log(code);
+  }).catch((error) => {
+    console.error('复制代码时出错:', error);
+  });
 };
 
 // 美化
@@ -238,7 +249,6 @@ const beautifyData = () => {
         insert: cleanedInput,
       },
     });
-    globalDataStore.updateGlobalValue('');
   }
 };
 
@@ -252,7 +262,6 @@ const clearEditor = () => {
         insert: '',
       },
     });
-    globalDataStore.updateGlobalValue('');
   }
 };
 
@@ -279,7 +288,6 @@ const doJS = async () => {
     const func = new Function(code);
     await func();
 
-    globalDataStore.updateGlobalValue(JSON.stringify(capturedLogs));
     emit('render-json', capturedLogs);
     console.log = originalLog;
     return;

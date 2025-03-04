@@ -9,6 +9,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useDataStore } from './store/GlobalData';
 import Controls from './components/Controls.vue';
 import JsonViewer from './components/JsonViewer.vue';
 import KeyPressDisplay from './components/KeyPressDisplay.vue';
@@ -17,7 +18,12 @@ import { defaultJson } from './utils/JsonUtils';
 const jsonData = ref<any>(defaultJson); // Initial JSON data
 const jsonViewerRef = ref<InstanceType<typeof JsonViewer> | null>(null);
 
+const globalDataStore = useDataStore();
+globalDataStore.updateGlobalValue(JSON.stringify(defaultJson));
+
 const renderJson = (data: any) => {
+
+  globalDataStore.updateGlobalValue(JSON.stringify(data));
   jsonData.value = data;
 };
 
