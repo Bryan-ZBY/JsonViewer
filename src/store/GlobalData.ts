@@ -3,11 +3,10 @@ import { defineStore } from 'pinia';
 // 定义一个名为 globalData 的 store
 export const useDataStore = defineStore('globalData', {
   state: () => ({
-    // 定义全局数据
-    globalValue: '初始值',
+    globalValue: '初始值', // 下方展示数据
     selectedKey: '',
     copyKey: '',
-    jsonValue: ''
+    jsonValue: '' // 编辑文档内数据
   }),
   actions: {
     // 定义修改数据的方法

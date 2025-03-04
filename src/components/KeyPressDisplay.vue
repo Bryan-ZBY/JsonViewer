@@ -28,6 +28,9 @@ export default {
   },
   methods: {
     handleKeyDown(event) {
+      if(document.activeElement?.tagName === "INPUT"){
+        return;
+      }
       // const key = event.key.slice(0,3);
       const key = event.key;
       // 添加带有唯一ID的对象

@@ -5,8 +5,8 @@
       v-model="inputText"
       @input="handleInput"
       @keydown="handleKeydown"
-      placeholder="已知当前 JSON 为 item, 请用 item.func... 执行过滤函数"
-      class="input-box"
+      :placeholder="placeholder"
+      :class="inputClass"
       ref="inputRef"
     />
     <ul v-if="showSuggestions" v-show="filteredData.length" class="suggestions-list">
@@ -36,6 +36,8 @@ const inputText = ref('');
 const currentFocus = ref(-1);
 const showSuggestions = ref(false);
 const inputRef = ref<HTMLInputElement | null>(null);
+const inputClass = ref<string>('input-box');
+const placeholder = ref<string>('已知当前 JSON 为 item, 请用 item.func... 执行过滤函数');
 
 const globalDataStore = useDataStore();
 const allKeys = ref<string[]>([]);
@@ -106,14 +108,15 @@ const handleKeydown = (event: KeyboardEvent) => {
       return;
     }
     emit('filter-json', inputText.value);
-  } else if (event.key === 'Tab' && filteredData.value.length > 0) {
+  } else if (event.key === 'Tab'){
     event.preventDefault();
-    if (currentFocus.value >= 0) {
-      applySuggestion(filteredData.value[currentFocus.value]);
-      return;
+    if(filteredData.value.length > 0) {
+      if (currentFocus.value >= 0) {
+        applySuggestion(filteredData.value[currentFocus.value]);
+        return;
+      }
+      applySuggestion(filteredData.value[0]);
     }
-
-    applySuggestion(filteredData.value[0]);
   } else if (event.key === 'ArrowDown') {
     event.preventDefault();
     currentFocus.value = (currentFocus.value + 1) % filteredData.value.length;
@@ -156,12 +159,18 @@ const selectItem = (item: string) => {
 };
 
 // 监听 globalDataStore.jsonValue 的变化
-watch(() => globalDataStore.jsonValue, (newValue) => {
-  const cleanedInput = newValue.trim();
-  if(!cleanedInput) return;
-  const jsonData = JSON.parse(cleanedInput);
-  allKeys.value = getUniqueKeys(jsonData);
-  allRealKeys.value = extractKeys(jsonData);
+watch(() => globalDataStore.jsonValue, (newValue: string) => {
+  let cleanedInput = newValue.trim();
+  try{
+    const jsonData = cleanedInput ? JSON.parse(cleanedInput) : defaultJson;
+    allKeys.value = getUniqueKeys(jsonData);
+    allRealKeys.value = extractKeys(jsonData);
+    inputClass.value = 'input-box';
+    placeholder.value = '已知当前 JSON 为 item, 请用 item.func... 执行过滤函数';
+  }catch(e:any){
+    inputClass.value = 'uneditable-input';
+    placeholder.value = e.message;
+  }
 }, { immediate: true });
 </script>
 
@@ -169,11 +178,26 @@ watch(() => globalDataStore.jsonValue, (newValue) => {
 /* 容器样式 */
 .autocomplete {
   position: relative;
-  width: 300px;
-  margin: 50px auto;
+  width: 100%;
+  margin: 20px auto;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+/* 输入框样式 */
+.uneditable-input {
+  width: 40%;
+  padding: 9px;
+  background: #1a2632;
+  color: #89aaf8;
+  font-size: 16px;
+  border: 2px solid #8191e1;
+  border-radius: 8px;
+  outline: none;
+  transition: width 0.5s ease-in-out, background 1.5s ease, opacity 1s ease;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
 /* 输入框样式 */
@@ -181,12 +205,12 @@ watch(() => globalDataStore.jsonValue, (newValue) => {
   width: 80%;
   padding: 10px;
   background: black;
-  color: cornsilk;
+  color: aliceblue;
   font-size: 14px;
   border: 2px solid #8191e1;
   border-radius: 8px;
   outline: none;
-  transition: border-color 0.3s ease;
+  transition: width 0.5s ease-in-out, background 1.5s ease, opacity 1s ease;
 }
 
 .input-box:focus {

@@ -12,21 +12,25 @@
           <div ref="editorRef" style="height: calc(100% - 40px)"></div>
         </div>
       </div>
+
       <div class="inputDiv">
-        <Autocomplete @filter-json="filterJson" style="width: 100%; "/>
+        <Autocomplete @filter-json="filterJson"/>
       </div>
-      <div style="height: 1px; background-color: #ccc; margin: 20px 0;"></div>
+
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
-      <!-- <button @click="doFetch">请求数据</button> -->
+      <!-- <button @click="doJS">执行</button> -->
       <button @click="zipData">压缩</button>
       <button @click="beautifyData">美化</button>
+
       <div class="search-wrapper">
         <input
           v-model="searchInput"
           ref="searchInputRef"
           type="text"
-          style="margin-right: 10px;"
+          style="margin-right: 10px;
+          box-shadow: rgb(37 42 75) 2px 2px 5px inset;
+          background: aliceblue;"
           placeholder="Search JSON..."
           @keydown.enter="handleEnter"
           @keydown.up="handleArrowUp"
@@ -50,7 +54,7 @@ import Autocomplete from './Autocomplete.vue';
 import { scrollTo } from '../utils/ScrollUtils';
 import JsonEditor from './JsonEditor.vue';
 import { useDataStore } from '../store/GlobalData';
-import { defaultJson } from '../utils/JsonUtils';
+import { defaultJson, filterJsonValue } from '../utils/JsonUtils';
 import { EditorView } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import { GenerateEditorState } from '../utils/EditorState';
@@ -73,28 +77,10 @@ const boxHeight = ref("300px");
 const boxWidth = ref("60vw");
 
 const filterJson = (fil: any) => {
-  let cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+  const result = filterJsonValue(fil, globalDataStore.jsonValue);
 
-  try {
-    let code = fil.replace(/item/, 'return JSON.parse(input)');
-    code = code.replace(".Where(", '.filter(');
-    code = code.replace(".Select(", '.map(');
-    code = code.replace(".SelectMany(", '.flatMap(');
-    code = code.replace(".FirstOrDefault(", '.find(');
-    code = code.replace(".Some(", '.any(');
-    code = code.replace(".All(", '.every(');
-
-    const func = new Function('input', code);
-    const result = func(cleanedInput);
-
-    globalDataStore.updateGlobalValue(JSON.stringify(result));
-
-    console.log(result);
-    emit('render-json', result);
-  } catch (error: any) {
-    console.log(`执行出错: ${error.message}`);
-  }
-
+  globalDataStore.updateGlobalValue(JSON.stringify(result));
+  emit('render-json', result);
 }
 
 const toSmall = () => {
@@ -218,9 +204,9 @@ const emitRenderJson = () => {
     const parsedJson = JSON.parse(cleanedInput);
     console.log(parsedJson);
     emit('render-json', parsedJson);
-  } catch (error) {
+  } catch (error: any) {
     console.error('JSON Parse Error:', error);
-    alert(`Invalid JSON! Error: ${error.message}`);
+    emit('render-json', {'Error:': error.message});
   }
 };
 
@@ -270,14 +256,34 @@ const clearEditor = () => {
   }
 };
 
-const doFetch = async () => {
+const doJS = async () => {
   let jsonInput = editorView.value?.state.doc.toString() || '';
   if (!jsonInput) {
     jsonInput = `fetch('https://jsonplaceholder.typicode.com/posts');`;
   }
 
   let code = jsonInput.trim();
-  console.log(code);
+
+  if(code.includes('console.log') && !code.includes('fetch(')){
+    // 用于存储捕获的日志信息
+    const capturedLogs:any[] = [];
+    // 保存原始的 console.log 方法
+    const originalLog = console.log;
+    // 重写 console.log 方法
+    console.log = function(...args) {
+      capturedLogs.push(args);
+      // 仍然调用原始的 console.log 方法，以保持正常的输出
+      originalLog.apply(console, args);
+    };
+
+    const func = new Function(code);
+    await func();
+
+    globalDataStore.updateGlobalValue(JSON.stringify(capturedLogs));
+    emit('render-json', capturedLogs);
+    console.log = originalLog;
+    return;
+  }
 
   if (code.endsWith(';')) {
     code = code.slice(0, -1);
@@ -309,6 +315,7 @@ const doFetch = async () => {
     }
   } catch (error: any) {
     globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
+    emit('render-json', {"Error": error.message});
   }
 };
 
@@ -440,8 +447,7 @@ onUnmounted(() => {
 .controls textarea:focus,
 .controls button:focus {
   outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  border-color: #282c34;
 }
 
 .controls button {

@@ -94,6 +94,9 @@ const arrayMethods = [
   "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All"
 ];
 
+/**
+ * 获取json折叠数据信息
+ */
 export function generateSummary(data: JsonData): string {
   if (Array.isArray(data)) {
     return `[${data.map(item => JSON.stringify(item)).join(', ')}]`;
@@ -109,6 +112,9 @@ export function generateSummary(data: JsonData): string {
   return JSON.stringify(data);
 }
 
+/**
+ * 获取子元素所有KEY
+  */
 export function getUniqueKeys(jsonObj: any, prefix = 'item'): string[] {
   const keys: Set<string> = new Set();
 
@@ -163,4 +169,32 @@ export function extractKeys(obj: any, keySet = new Set()) {
     }
   }
   return [...keySet, ...arrayMethods];
+}
+
+/**
+ * json数据过滤器
+  */
+export function filterJsonValue(fil: any, jsonValue: string) {
+  let cleanedInput = (jsonValue || JSON.stringify(defaultJson)).trim();
+
+  try {
+    let code = fil.replace(/item/, 'return JSON.parse(input)');
+    code = code.replace(".FirstOrDefault(", '.find(');
+    code = code.replace(".Some(", '.any(');
+    code = code.replace(".All(", '.every(');
+
+    const func = new Function('input', code);
+    let result = func(cleanedInput);
+    if(typeof result === 'string'){
+      result = {'cur-data': result};
+    }
+
+    // globalDataStore.updateGlobalValue(JSON.stringify(result));
+
+    console.log(result);
+    return result;
+  } catch (error: any) {
+    console.log(`执行出错: ${error.message}`);
+    return {"Error": error.message};
+  }
 }
