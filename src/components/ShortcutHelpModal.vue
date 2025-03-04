@@ -1,18 +1,20 @@
 <template>
-  <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>列举部分常用快捷键</h2>
-        <span class="close-button" @click="$emit('close')">×</span>
+  <transition name="modal">
+    <div v-if="visible" class="modal-overlay" @click.self="$emit('close')">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>列举部分常用快捷键</h2>
+          <span class="close-button" @click="$emit('close')">×</span>
+        </div>
+        <ul class="shortcut-list">
+          <li v-for="(shortcut, index) in shortcuts" :key="index">
+            <span class="shortcut-key">{{ shortcut.key }}</span>
+            <span class="shortcut-description">{{ shortcut.description }}</span>
+          </li>
+        </ul>
       </div>
-      <ul class="shortcut-list">
-        <li v-for="(shortcut, index) in shortcuts" :key="index">
-          <span class="shortcut-key">{{ shortcut.key }}</span>
-          <span class="shortcut-description">{{ shortcut.description }}</span>
-        </li>
-      </ul>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -28,7 +30,6 @@ defineEmits<{
 
 // 定义快捷键数据
 const shortcuts = ref([
-  // 已有的快捷键
   { key: '?', description: '帮助' },
   { key: 'iI | aA', description: '进入插入模式' },
   { key: 'Esc | jk', description: '退出插入模式' },
@@ -39,28 +40,18 @@ const shortcuts = ref([
   { key: 'A-j', description: '下移整行' },
   { key: 't', description: '向上滚动' },
   { key: 'f', description: '向下滚动' },
-
   { key: 'zc', description: '收起到父节点（折叠当前代码块）' },
   { key: 'zo', description: '展开子节点（展开当前代码块）' },
   { key: 'zz', description: '当前行居中' },
   { key: 'gg', description: '到顶部' },
   { key: 'G', description: '到底部' },
-
   { key: '/', description: '启动正向搜索' },
   { key: 'n', description: '下一个匹配项（搜索结果）' },
   { key: 'N', description: '上一个匹配项（搜索结果）' },
-
-  // 移动类（常用 Vim 导航）
   { key: '%', description: '跳转到匹配的括号/符号' },
-
-  // 编辑类
   { key: 'u', description: '撤销' },
   { key: 'Ctrl-r', description: '恢复' },
-
-  // 可视模式
   { key: 'V', description: '选一行' },
-
-  // 搜索与替换
   { key: '*', description: '搜索光标下的单词（正向）' },
   { key: '#', description: '搜索光标下的单词（反向）' },
   { key: ':s/old/new', description: '替换当前行的 old 为 new' },
@@ -69,6 +60,18 @@ const shortcuts = ref([
 </script>
 
 <style scoped>
+/* 模态框动画 */
+.modal-enter-active,
+.modal-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+  opacity: 0;
+  transform: scale(1.5);
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -88,14 +91,14 @@ const shortcuts = ref([
   padding: 20px;
   border-radius: 5px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  max-width: 1000px; /* 增加宽度以适应两列 */
+  max-width: 1000px;
   width: 90%;
   font-family: Arial, sans-serif;
   font-size: 14px;
   position: relative;
   z-index: 1001;
-  max-height: 80vh; /* 限制高度，避免溢出屏幕 */
-  overflow-y: auto; /* 启用垂直滚动 */
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -130,8 +133,8 @@ const shortcuts = ref([
   list-style: none;
   padding: 0;
   margin: 0;
-  column-count: 2; /* 分成两列 */
-  column-gap: 200px; /* 列间距 */
+  column-count: 2;
+  column-gap: 200px;
 }
 
 .shortcut-list li {
@@ -140,7 +143,7 @@ const shortcuts = ref([
   display: flex;
   justify-content: space-between;
   align-items: center;
-  break-inside: avoid; /* 防止列表项跨列分割 */
+  break-inside: avoid;
 }
 
 .shortcut-list li:last-child {

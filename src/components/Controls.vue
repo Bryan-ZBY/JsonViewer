@@ -30,7 +30,7 @@
           type="text"
           style="margin-right: 10px;
           box-shadow: rgb(37 42 75) 2px 2px 5px inset;
-          background: aliceblue;"
+          background: beige;"
           placeholder="Search JSON..."
           @keydown.enter="handleEnter"
           @keydown.up="handleArrowUp"
@@ -482,7 +482,13 @@ onUnmounted(() => {
   max-height: 80vh;
   min-width: 600px; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
-  /* transition: all 0.3s ease;  */
+  transition: all 0.3s ease;
+ box-shadow: rgb(37, 42, 75) 4px 4px 10px;
+}
+
+.editor-container:hover {
+  /* transform: translateY(0px) scale(1.001); */
+  box-shadow: 7px 10px 30px rgba(37, 42, 75) ; /* 更强的光晕 */
 }
 
 /* 确保 CodeMirror 的内容区域适应容器大小 */
@@ -501,4 +507,11 @@ onUnmounted(() => {
 .semi-icon:hover {
   background: #000;
 }
+
+ /* 现代浏览器 */
+::placeholder {
+  color: #0f1d7e;
+  opacity: 0.9; /* Firefox 默认会降低透明度，这里设置为 1 */
+}
+
 </style>

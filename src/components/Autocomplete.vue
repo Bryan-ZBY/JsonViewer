@@ -185,6 +185,12 @@ watch(() => globalDataStore.jsonValue, (newValue: string) => {
   align-items: center;
 }
 
+ /* 现代浏览器 */
+::placeholder {
+  color: #d5f7ff;
+  opacity: 0.8; /* Firefox 默认会降低透明度，这里设置为 1 */
+}
+
 /* 输入框样式 */
 .uneditable-input {
   width: 40%;
@@ -207,7 +213,7 @@ watch(() => globalDataStore.jsonValue, (newValue: string) => {
   background: black;
   color: aliceblue;
   font-size: 14px;
-  border: 2px solid #8191e1;
+  border: 2px solid #41528e;
   border-radius: 8px;
   outline: none;
   transition: width 0.5s ease-in-out, background 1.5s ease, opacity 1s ease;

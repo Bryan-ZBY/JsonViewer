@@ -1,7 +1,7 @@
 body {
   font-family: Arial, sans-serif;
   margin: 20px;
-  background-color: #ffffff;
+  background-color: aliceblue;
   color: #000000;
   transition: background-color 0.3s, color 0.3s;
 }

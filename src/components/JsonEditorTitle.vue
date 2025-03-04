@@ -1,9 +1,10 @@
-
-<template >
+<template>
   <div class="header-dBhZw9">
+    <div v-if="showCopied" class="copied-tooltip">复制成功</div>
     <div class="text-qQiIjw">JSON</div>
     <div class="action-UHHINY">
-      <div class="hoverable-fZ6eZQ" data-testid="code-block-copy" tabindex="0" aria-describedby="453o5bh" data-popupid="453o5bh"  @click="copyCode">
+      <!-- 复制按钮 -->
+      <div class="hoverable-fZ6eZQ" data-testid="code-block-copy" tabindex="0" aria-describedby="453o5bh" data-popupid="453o5bh" @click="copyCode">
         <span role="img" class="semi-icon semi-icon-default text-14">
           <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24">
             <path fill="currentColor" fill-rule="evenodd" d="M21 3.5V17a2 2 0 0 1-2 2h-2v-2h2V3.5H9v2h5.857c1.184 0 2.143.895 2.143 2v13c0 1.105-.96 2-2.143 2H5.143C3.959 22.5 3 21.605 3 20.5v-13c0-1.105.96-2 2.143-2H7v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2m-6.143 4H5.143v13h9.714z" clip-rule="evenodd">
@@ -11,6 +12,7 @@
           </svg>
         </span>
       </div>
+      <!-- 其他按钮 -->
       <div class="hoverable-fZ6eZQ" tabindex="0" aria-describedby="tgfbvud" data-popupid="tgfbvud" @click="emit('show-help-modal')">
         <span role="img" class="semi-icon semi-icon-default text-14">
           <svg viewBox="0 0 24 24" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1">
@@ -54,7 +56,7 @@
   </div>
 </template>
 
-<script setup lang='ts'>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted, defineProps, defineExpose, nextTick, watch } from 'vue';
 import { EditorView } from "@codemirror/view";
 
@@ -62,29 +64,30 @@ import { EditorView } from "@codemirror/view";
 const props = defineProps<{
   editorView: EditorView;
 }>();
-
 const emit = defineEmits<{
   (e: 'show-help-modal'): void;
   (e: 'to-big'): void;
   (e: 'to-small'): void;
 }>();
 
+const showCopied = ref(false); // 控制复制提示的显示
+
 // 复制代码到剪贴板
 const copyCode = () => {
-  if (props.editorView) {
-    const code = props.editorView.state.doc.toString();
-    navigator.clipboard.writeText(code).then(() => {
-      console.log('代码已复制到剪贴板');
-    }).catch((error) => {
-      console.error('复制代码时出错:', error);
-    });
-  }
+  const code = props.editorView.state.doc.toString();
+  navigator.clipboard.writeText(code).then(() => {
+    showCopied.value = true; // 显示提示
+    setTimeout(() => {
+      showCopied.value = false; // 3秒后隐藏提示
+    }, 2000);
+  }).catch((error) => {
+    console.error('复制代码时出错:', error);
+  });
 };
 
 const toggleDarkMode = () => {
   document.body.classList.toggle('dark-mode');
 };
-
 </script>
 
 <style scoped>
@@ -94,7 +97,7 @@ const toggleDarkMode = () => {
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
-  font-family: Menlo,Monaco,Consolas,Courier New,monospace;
+  font-family: Menlo, Monaco, Consolas, Courier New, monospace;
   font-size: 12px;
   height: 32px;
   justify-content: space-between;
@@ -111,8 +114,43 @@ const toggleDarkMode = () => {
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 2px;
   justify-content: space-between;
 }
 
+.hoverable-fZ6eZQ {
+  padding: 8px;
+  transition: all 0.3s ease;
+  position: relative; /* 为提示定位 */
+}
+
+.hoverable-fZ6eZQ:hover {
+  transform: translateY(1px) scale(1.4);
+  color: powderblue;
+}
+
+/* 复制按钮点击动画 */
+.hoverable-fZ6eZQ:active {
+  transform: scale(0.9);
+}
+
+/* 复制提示 */
+.copied-tooltip {
+  position: absolute;
+  left: 50%;
+  background: beige;
+  color: #0f1d7e;
+  padding: 4px 8px;
+  border: 1px solid aliceblue;
+  border-radius: 4px;
+  font-size: 12px;
+  animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  30% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; }
+}
 </style>
