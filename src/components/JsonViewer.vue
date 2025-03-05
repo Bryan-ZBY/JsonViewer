@@ -6,8 +6,8 @@
         @mouseenter="showCopyButton($event, item)">
         <div :class="{ 'selected': globalDataStore.selectedKey === item.fullKey }" >
           <span v-show="globalDataStore.selectedKey === item.fullKey">
-            <button class="copy-button2" style="user-select:none"
-              @click.stop="copyKeyToClipboard(item.value, item.key)">{{ copyKeyData }}</button>
+            <!-- <button class="copy-button2" style="user-select:none" -->
+            <!--   @click.stop="copyKeyToClipboard(item.value, item.key)">{{ copyKeyData }}</button> -->
             <button class="copy-button" style="user-select:none"
               @click.stop="copyToClipboard(item.value, item.key)">{{ copyData }}</button>
           </span>
@@ -398,7 +398,7 @@ ul {
 }
 
 .eleli div {
-  max-width: calc(100% - 50px);
+  max-width: calc(100% - 20px);
   overflow: hidden;
   text-overflow: ellipsis;
 }

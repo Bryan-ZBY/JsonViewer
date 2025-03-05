@@ -1,10 +1,38 @@
 body {
   font-family: Arial, sans-serif;
-  margin: 20px;
+  margin: 0px;
   background-color: aliceblue;
   color: #000000;
   transition: background-color 0.3s, color 0.3s;
 }
+
+/* 隐藏 Chrome、Safari 和 Opera 浏览器的滚动条 */
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* 隐藏 Chrome、Safari 和 Opera 浏览器的滚动条 */
+#container::-webkit-scrollbar {
+  display: none;
+}
+
+/* 隐藏 Chrome、Safari 和 Opera 浏览器的滚动条 */
+.vertical::-webkit-scrollbar {
+  display: none;
+}
+
+/* 隐藏 Chrome、Safari 和 Opera 浏览器的滚动条 */
+.horizontal::-webkit-scrollbar {
+  display: none;
+}
+
+/* .horizontal .search-wrapper { */
+/*     margin-left: auto; */
+/*     position: absolute; */
+/*     right: -700px; */
+/*     top: -0px; */
+/* } */
+
 
 body.dark-mode {
   background-color: #121212;

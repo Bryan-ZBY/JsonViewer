@@ -75,7 +75,7 @@ const historyIndex = ref(-1);
 const showHelpModal = ref(false);
 
 const boxHeight = ref("300px");
-const boxWidth = ref("60vw");
+const boxWidth = ref("60%");
 
 const filterJson = (fil: any) => {
   const result = filterJsonValue(fil, globalDataStore.jsonValue);
@@ -90,7 +90,7 @@ const toSmall = () => {
     boxWidth.value = "300px";
   }else{
     boxHeight.value = "300px";
-    boxWidth.value = "60vw";
+    boxWidth.value = "60%";
   }
 }
 
@@ -100,7 +100,7 @@ const toBig = () => {
     boxWidth.value = "100%";
   }else{
     boxHeight.value = "300px";
-    boxWidth.value = "60vw";
+    boxWidth.value = "60%";
   }
 }
 
@@ -488,7 +488,7 @@ onUnmounted(() => {
   resize: both; /* 允许水平和垂直拖动调整大小 */
   max-width: 100%; /* 最大宽度 */
   max-height: 80vh;
-  min-width: 600px; /* 最小宽度，防止拖得太小 */
+  min-width: 20%; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
   transition: all 0.3s ease;
  box-shadow: rgb(37, 42, 75) 4px 4px 10px;
