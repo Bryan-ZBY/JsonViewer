@@ -89,9 +89,11 @@ const arrayMethods = [
   "find", "findIndex", "flat", "flatMap", "forEach", "includes",
   "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push",
   "reduce", "reduceRight", "reverse", "shift", "slice", "some",
-  "sort", "splice", "toLocaleString", "toString", "unshift",
+  "sort", "splice", "toLocaleString", "toString", "unshift", "length", 
 
-  "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All"
+  "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All",
+
+  "Values", "Keys", "ToVector2", "ToSet", "ToJson"
 ];
 
 /**
@@ -185,7 +187,7 @@ export function filterJsonValue(fil: any, jsonValue: string) {
 
     const func = new Function('input', code);
     let result = func(cleanedInput);
-    if(typeof result === 'string'){
+    if(typeof result !== 'object'){
       result = {'cur-data': result};
     }
 

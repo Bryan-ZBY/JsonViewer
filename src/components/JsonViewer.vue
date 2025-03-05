@@ -24,7 +24,7 @@
           </template>
         </div>
 
-          <div v-if="item.isObjectOrArray" v-show="item.isCollapsed" class="nested-container">
+          <div v-if="item.isObjectOrArray && item.isCollapsed" v-show="item.isCollapsed" class="nested-container">
             <JsonViewer :json-data="item.value" :parent-key="item.fullKey" ref="childViewer" />
           </div>
       </li>
