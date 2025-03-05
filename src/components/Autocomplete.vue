@@ -31,6 +31,49 @@ const emit = defineEmits<{
   (e: 'filter-json', searchText: string): void;
 }>();
 
+  Object.defineProperty(Object.prototype, 'Keys', {
+    configurable: true,
+    writable: true,
+    value: function Keys() { return Object.keys(this); }
+  })
+  Object.defineProperty(Object.prototype, 'Values', {
+    configurable: true,
+    writable: true,
+    value: function Values() { return Object.values(this); }
+  })
+
+  Object.defineProperty(Object.prototype, 'ToSet', {
+    configurable: true,
+    writable: true,
+    value: function ToSet() { return [...new Set(this)]; }
+  })
+
+  Object.defineProperty(Object.prototype, 'ToJson', {
+    configurable: true,
+    writable: true,
+    value: function ToSet() { return JSON.stringify(this); }
+  })
+
+
+  Object.defineProperty(Array.prototype, 'ToVector2', {
+    configurable: true,
+    writable: true,
+    value: function Keys() {
+      return (function factorial(param) {
+        let data = JSON.parse(JSON.stringify(param).toUpperCase());
+        if (Array.isArray(data)) {
+          for (let index = 0; index < data.length; index++) {
+            data[index] = factorial(data[index])
+          }
+        } else if (data.Z != undefined) {
+          data = { X: data.X, Y: data.Z }
+        }
+        return data;
+      })(this)
+    }
+  })
+
+
 // 状态定义
 const inputText = ref('');
 const currentFocus = ref(-1);
@@ -66,11 +109,22 @@ const filteredData = computed(() => {
   const arrayMethods = getArrayMethods(JSON.parse(globalDataStore.jsonValue || JSON.stringify(defaultJson)), parts.join('.')) || [];
 
   // 普通键补全
-  const keySuggestions = allKeys.value
-    .filter((key) => key.startsWith(prefix))
-    .map((key) => key.slice(prefix.length).split('.')[0])
-    .filter((key) => key.toLowerCase().startsWith(lastPart.toLowerCase()))
-    .filter((v, i, self) => self.indexOf(v) === i);
+  let keySuggestions = allKeys.value.filter((key) => key.startsWith(prefix));
+  keySuggestions = [...new Set(keySuggestions)];
+
+  keySuggestions = keySuggestions.map((key) => key.slice(prefix.length).split('.')[0]);
+  keySuggestions = [...new Set(keySuggestions)];
+
+  // 第三步：筛选以 lastPart 开头的键，并去重
+  keySuggestions = keySuggestions.filter((key) => key.toLowerCase().startsWith(lastPart.toLowerCase()));
+  keySuggestions = [...new Set(keySuggestions)];
+
+  keySuggestions = keySuggestions.filter((v, i, self) => self.indexOf(v) === i);
+
+  // let keySuggestions = allKeys.value.filter((key) => key.startsWith(prefix));
+  // keySuggestions = keySuggestions.map((key) => key.slice(prefix.length).split('.')[0]);
+  // keySuggestions = keySuggestions.filter((key) => key.toLowerCase().startsWith(lastPart.toLowerCase()));
+  // keySuggestions = keySuggestions.filter((v, i, self) => self.indexOf(v) === i);
 
   // 如果是数组路径，且 lastPart 为空或匹配数组方法，则添加数组方法
   if (arrayMethods.length > 0) {
@@ -105,22 +159,26 @@ const handleKeydown = (event: KeyboardEvent) => {
     event.preventDefault();
     if (currentFocus.value >= 0) {
       applySuggestion(filteredData.value[currentFocus.value]);
+      showSuggestions.value = false;
+      currentFocus.value = -1;
       return;
     }
+    showSuggestions.value = false;
     emit('filter-json', inputText.value);
   } else if (event.key === 'Tab'){
     event.preventDefault();
     if(filteredData.value.length > 0) {
       if (currentFocus.value >= 0) {
         applySuggestion(filteredData.value[currentFocus.value]);
+        currentFocus.value = -1;
         return;
       }
       applySuggestion(filteredData.value[0]);
     }
-  } else if (event.key === 'ArrowDown') {
+  } else if (event.key === 'ArrowDown' || (event.key === 'j' && event.ctrlKey) || (event.key === 'n' && event.ctrlKey)) {
     event.preventDefault();
     currentFocus.value = (currentFocus.value + 1) % filteredData.value.length;
-  } else if (event.key === 'ArrowUp') {
+  } else if (event.key === 'ArrowUp' || (event.key === 'k' && event.ctrlKey)) {
     event.preventDefault();
     currentFocus.value =
       (currentFocus.value - 1 + filteredData.value.length) % filteredData.value.length;
@@ -212,7 +270,7 @@ watch(() => globalDataStore.jsonValue, (newValue: string) => {
   padding: 10px;
   background: black;
   color: aliceblue;
-  font-size: 14px;
+  font-size: 12px;
   border: 2px solid #41528e;
   border-radius: 8px;
   outline: none;
@@ -260,7 +318,7 @@ watch(() => globalDataStore.jsonValue, (newValue: string) => {
   color: #e5e7eb;
   cursor: pointer;
   line-height: 12px;
-  font-size: 14px;
+  font-size: 12px;
   transition: all 0.2s ease;
   border-bottom: 1px solid #303846;
 }

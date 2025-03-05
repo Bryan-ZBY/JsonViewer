@@ -3,7 +3,7 @@
     <div class="controls">
 
       <div class="inputDiv">
-        <div class="editor-container" :style="{ width: boxWidth, height: boxHeight }">
+        <div class="editor-container" :style="editorStyle">
           <JsonEditorTitle :editor-view="editorView"
             @show-help-modal="showHelpModal = true"
             @to-small="toSmall"
@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, onUnmounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount, onUnmounted, computed } from 'vue';
 import { vim, Vim } from '@replit/codemirror-vim'; // 引入 Vim 模式
 import ShortcutHelpModal from './ShortcutHelpModal.vue';
 import JsonEditorTitle from './JsonEditorTitle.vue';
@@ -76,6 +76,14 @@ const showHelpModal = ref(false);
 
 const boxHeight = ref("300px");
 const boxWidth = ref("60%");
+const isProgrammaticResize = ref(false); // Flag to enable/disable transition
+
+// Computed style for editor-container
+const editorStyle = computed(() => ({
+  width: boxWidth.value,
+  height: boxHeight.value,
+  transition: isProgrammaticResize.value ? 'all 0.3s ease' : 'none', // Conditional transition
+}));
 
 const filterJson = (fil: any) => {
   const result = filterJsonValue(fil, globalDataStore.jsonValue);
@@ -85,6 +93,7 @@ const filterJson = (fil: any) => {
 }
 
 const toSmall = () => {
+  isProgrammaticResize.value = true; // Enable transition
   if(boxHeight.value != "100px"){
     boxHeight.value = "100px";
     boxWidth.value = "300px";
@@ -92,9 +101,13 @@ const toSmall = () => {
     boxHeight.value = "300px";
     boxWidth.value = "60%";
   }
+  setTimeout(() => {
+    isProgrammaticResize.value = false;
+  }, 300); // Match transition duration
 }
 
 const toBig = () => {
+  isProgrammaticResize.value = true; // Enable transition
   if(boxHeight.value != "80vh"){
     boxHeight.value = "80vh";
     boxWidth.value = "100%";
@@ -102,8 +115,10 @@ const toBig = () => {
     boxHeight.value = "300px";
     boxWidth.value = "60%";
   }
+  setTimeout(() => {
+    isProgrammaticResize.value = false;
+  }, 300); // Match transition duration
 }
-
 
 const globalDataStore = useDataStore();
 
@@ -182,14 +197,6 @@ onMounted(() => {
 
   // 将 Ctrl-v 映射到粘贴动作
   Vim.mapCommand('<C-v>', 'action', 'pasteFromClipboard', {}, 'normal');
-
-  // 添加快捷键支持全屏（可选）
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'F11') {
-      e.preventDefault();
-      toBig();
-    }
-  });
 });
 
 // 清理编辑器实例
@@ -225,7 +232,6 @@ const zipData = () => {
     });
   }
 };
-
 
 // 复制代码到剪贴板
 const copyResult = () => {
@@ -360,6 +366,19 @@ const handleKeyDown = (event: KeyboardEvent) => {
     showHelpModal.value = false;
   }
 
+  if (event.key === 'F11') {
+    event.preventDefault();
+    toBig();
+  }
+  if (event.key === 'F10') {
+    event.preventDefault();
+    toSmall();
+  }
+  if (event.key === 'F8') {
+    event.preventDefault();
+    document.body.classList.toggle('dark-mode');
+  }
+
   if (isInput()) {
     return;
   }
@@ -444,9 +463,9 @@ onUnmounted(() => {
 .controls textarea,
 .controls button {
   padding: 8px 12px;
-  border: 1px solid #ccc;
+  border: 0px solid #282c34;
   border-radius: 4px;
-  font-size: 14px;
+  font-size: 12px;
   transition: background-color 0.3s, border-color 0.3s;
   pointer-events: auto;
 }
@@ -455,7 +474,8 @@ onUnmounted(() => {
 .controls textarea:focus,
 .controls button:focus {
   outline: none;
-  border-color: #282c34;
+  border: 1px solid #282c34;
+  padding: 7px 11px;
 }
 
 .controls button {
@@ -480,8 +500,6 @@ onUnmounted(() => {
 }
 
 .editor-container {
-  width: 800px; /* 初始宽度 */
-  height: 300px; /* 初始高度 */
   border: 1px solid #657efd;
   border-radius: 10px;
   overflow: auto; /* 确保内容超出时可以滚动 */
@@ -490,13 +508,11 @@ onUnmounted(() => {
   max-height: 80vh;
   min-width: 20%; /* 最小宽度，防止拖得太小 */
   min-height: 100px; /* 最小高度，防止拖得太小 */
-  transition: all 0.3s ease;
- box-shadow: rgb(37, 42, 75) 4px 4px 10px;
+  box-shadow: rgb(37, 42, 75) 4px 4px 10px;
 }
 
 .editor-container:hover {
-  /* transform: translateY(0px) scale(1.001); */
-  box-shadow: 7px 10px 30px rgba(37, 42, 75) ; /* 更强的光晕 */
+  box-shadow: 7px 10px 30px rgba(37, 42, 75); /* 更强的光晕 */
 }
 
 /* 确保 CodeMirror 的内容区域适应容器大小 */
@@ -516,10 +532,9 @@ onUnmounted(() => {
   background: #000;
 }
 
- /* 现代浏览器 */
+/* 现代浏览器 */
 ::placeholder {
   color: #0f1d7e;
   opacity: 0.9; /* Firefox 默认会降低透明度，这里设置为 1 */
 }
-
 </style>

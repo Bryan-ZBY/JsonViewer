@@ -86,6 +86,14 @@ onMounted(() => {
   });
   resizeObserver.observe(blue);
   updateGreenPosition(); // 初始加载时更新位置
+
+
+  // 添加快捷键支持全屏（可选）
+  window.addEventListener('keydown', (e) => {
+    if(e.key == "F9"){
+      toggleLayout()
+    }
+  });
 });
 
 onUnmounted(() => {
@@ -98,8 +106,8 @@ onUnmounted(() => {
   --spacing: 10px;
   --button-bg: #2b3b4c;
   --button-hover: #0056b3;
-  --transition: all 0.4s ease-in-out;
-  --border-color: #00b7ff; /* 可自定义边框颜色 */
+  --transition: all 0.5s ease-in-out;
+  --border-color: #000; /* 可自定义边框颜色 */
   --shadow-color: rgba(0, 183, 255, 0.5); /* 阴影颜色 */
 }
 
@@ -148,30 +156,35 @@ onUnmounted(() => {
 
 /* 定义关键帧动画，改变背景颜色实现渐变效果 */
 @keyframes darkGradientAnimation {
-0% {
-  background: #1b233a;
-  height: 0%;
-  top: 50%;
-}
-100% {
-  background: #9ac0ff;
-  top: 0;
-  height: 100%;
-}
+  0% {
+    background: #1b233a;
+    height: 0%;
+    top: 50%;
+  }
+  20% {
+    background: #1b233a;
+    height: 100%;
+    top: 0;
+  }
+  100% {
+    background: #9ac0ff;
+    top: 0;
+    height: 100%;
+  }
 }
 
 /* 定义关键帧动画，改变背景颜色实现渐变效果 */
 @keyframes gradientAnimation {
-0% {
-  background: #9ac0ff;
-  height: 0%;
-  top: 50%;
-}
-100% {
-  background: #1b233a;
-  top: 0;
-  height: 100%;
-}
+  0% {
+    background: #9ac0ff;
+    height: 0%;
+    top: 70%;
+  }
+  100% {
+    background: #1b233a;
+    top: 0;
+    height: 100%;
+  }
 }
 
 /* 水平布局时容器的伪元素样式 */
@@ -213,6 +226,7 @@ onUnmounted(() => {
 
 .fixed-button,
 .fixed-button-1 {
+  z-index: 9999;
   position: fixed;
   bottom: 20px;
   padding: 10px 20px;

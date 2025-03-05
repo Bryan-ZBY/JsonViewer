@@ -89,9 +89,11 @@ const arrayMethods = [
   "find", "findIndex", "flat", "flatMap", "forEach", "includes",
   "indexOf", "join", "keys", "lastIndexOf", "map", "pop", "push",
   "reduce", "reduceRight", "reverse", "shift", "slice", "some",
-  "sort", "splice", "toLocaleString", "toString", "unshift",
+  "sort", "splice", "toLocaleString", "toString", "unshift", "length", 
 
-  "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All"
+  "Select", "Where", "First", "FirstOrDefault", "SelectMany", "Some", "All",
+
+  "Values", "Keys", "ToVector2", "ToSet", "ToJson", '0'
 ];
 
 /**
@@ -153,20 +155,20 @@ export function getArrayMethods(jsonObj: any, path: string): string[] | null {
 
 export function extractKeys(obj: any, keySet = new Set()) {
   if (typeof obj === 'object' && obj!== null) {
-    if (Array.isArray(obj)) {
-      // 只处理数组的第一个元素
-      if (obj.length > 0) {
-        extractKeys(obj[0], keySet);
-      }
-    } else {
+    // if (Array.isArray(obj)) {
+    //   // 只处理数组的第一个元素
+    //   if (obj.length > 0) {
+    //     extractKeys(obj[0], keySet);
+    //   }
+    // } else {
       // 处理对象
       for (const key in obj) {
         if (!keySet.has(key)) {
           keySet.add(key);
-          extractKeys(obj[key], keySet);
         }
+        extractKeys(obj[key], keySet);
       }
-    }
+    // }
   }
   return [...keySet, ...arrayMethods];
 }
@@ -182,10 +184,11 @@ export function filterJsonValue(fil: any, jsonValue: string) {
     code = code.replace(".FirstOrDefault(", '.find(');
     code = code.replace(".Some(", '.any(');
     code = code.replace(".All(", '.every(');
+    code = code.replace(".0", '[0]');
 
     const func = new Function('input', code);
     let result = func(cleanedInput);
-    if(typeof result === 'string'){
+    if(typeof result !== 'object'){
       result = {'cur-data': result};
     }
 

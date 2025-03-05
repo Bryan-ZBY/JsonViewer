@@ -31,8 +31,13 @@ defineEmits<{
 // 定义快捷键数据
 const shortcuts = ref([
   { key: '?', description: '帮助' },
-  { key: 'iI | aA', description: '进入插入模式' },
-  { key: 'Esc | jk', description: '退出插入模式' },
+  { key: '<F8>', description: '明暗模式切换' },
+  { key: '<F9>', description: '布局切换' },
+  { key: '<F10>', description: '输入区域最小化' },
+  { key: '<F11>', description: '输入区域最大化' },
+  { key: 'G', description: '到底部' },
+  { key: 'iI | aA', description: '退出VIM-normal模式' },
+  { key: 'Esc | jk', description: '进入VIM-normal模式' },
   { key: 'yy', description: '复制整行(文档内)' },
   { key: 'p', description: '粘贴(仅作了文档内)' },
   { key: 'dd', description: '删除整行' },
@@ -53,7 +58,7 @@ const shortcuts = ref([
   { key: 'Ctrl-r', description: '恢复' },
   { key: 'V', description: '选一行' },
   { key: '*', description: '搜索光标下的单词（正向）' },
-  { key: '#', description: '搜索光标下的单词（反向）' },
+  // { key: '#', description: '搜索光标下的单词（反向）' },
   { key: ':s/old/new', description: '替换当前行的 old 为 new' },
   { key: ':%s/old/new/g', description: '全局替换 old 为 new' },
 ]);
@@ -94,7 +99,7 @@ const shortcuts = ref([
   max-width: 1000px;
   width: 90%;
   font-family: Arial, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   position: relative;
   z-index: 1001;
   max-height: 80vh;

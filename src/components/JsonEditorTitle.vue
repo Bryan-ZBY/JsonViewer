@@ -104,7 +104,7 @@ const toggleDarkMode = () => {
   padding: 6px 9px 6px 16px;
   background: #131921;
   color: aliceblue;
-  font-size: 14px;
+  font-size: 12px;
   padding: 4px 20px;
 }
 
