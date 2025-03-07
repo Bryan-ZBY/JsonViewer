@@ -252,11 +252,10 @@ watch(() => globalDataStore.jsonValue, (newValue: string) => {
 /* 输入框样式 */
 .uneditable-input {
   width: 40%;
-  padding: 9px;
+  padding: 10px;
   background: #1a2632;
   color: #89aaf8;
-  font-size: 16px;
-  border: 2px solid #8191e1;
+  font-size: 12px;
   border-radius: 8px;
   outline: none;
   transition: width 0.5s ease-in-out, background 1.5s ease, opacity 1s ease;

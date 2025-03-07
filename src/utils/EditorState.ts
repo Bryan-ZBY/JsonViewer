@@ -124,6 +124,9 @@ function GenerateEditorState(){
   // 编辑器的初始内容
   const initialCode = JSON.stringify(defaultJson, null, 2);
 
+  // 创建一个包含自动换行的扩展配置
+  const lineWrappingExtension = EditorView.lineWrapping;
+
   const state = EditorState.create({
     doc: initialCode, // 初始代码
     extensions: [
@@ -134,6 +137,7 @@ function GenerateEditorState(){
       javascript(), // JavaScript 语法高亮
       oneDark, // 暗色主题
       vim(), // 启用 Vim 模式
+      // lineWrappingExtension, // 启用自动换行
 
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {

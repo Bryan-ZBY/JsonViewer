@@ -19,7 +19,7 @@
 
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
-      <!-- <button @click="doJS">执行</button> -->
+      <button @click="doJS">执行</button>
       <button @click="zipData">压缩</button>
       <button @click="beautifyData">美化</button>
       <button @click="copyResult">复制</button>
@@ -94,9 +94,9 @@ const filterJson = (fil: any) => {
 
 const toSmall = () => {
   isProgrammaticResize.value = true; // Enable transition
-  if(boxHeight.value != "100px"){
-    boxHeight.value = "100px";
-    boxWidth.value = "300px";
+  if(boxHeight.value != "40px"){
+    boxHeight.value = "40px";
+    boxWidth.value = "260px";
   }else{
     boxHeight.value = "300px";
     boxWidth.value = "60%";
@@ -239,8 +239,8 @@ const copyResult = () => {
   navigator.clipboard.writeText(code).then(() => {
     console.log(code);
   }).catch((error) => {
-    console.error('复制代码时出错:', error);
-  });
+      console.error('复制代码时出错:', error);
+    });
 };
 
 // 美化
@@ -271,66 +271,82 @@ const clearEditor = () => {
   }
 };
 
+const isJSON = (str: string) => {
+    try {
+        JSON.parse(str);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 const doJS = async () => {
   let jsonInput = editorView.value?.state.doc.toString() || '';
-  if (!jsonInput) {
-    jsonInput = `fetch('https://jsonplaceholder.typicode.com/posts');`;
-  }
-
   let code = jsonInput.trim();
 
-  if(code.includes('console.log') && !code.includes('fetch(')){
-    // 用于存储捕获的日志信息
-    const capturedLogs:any[] = [];
-    // 保存原始的 console.log 方法
-    const originalLog = console.log;
-    // 重写 console.log 方法
-    console.log = function(...args) {
-      capturedLogs.push(args);
-      // 仍然调用原始的 console.log 方法，以保持正常的输出
-      originalLog.apply(console, args);
-    };
-
-    const func = new Function(code);
-    await func();
-
-    emit('render-json', capturedLogs);
-    console.log = originalLog;
-    return;
-  }
-
-  if (code.endsWith(';')) {
-    code = code.slice(0, -1);
-  }
-  code = code.replace(/fetch\(/, 'return fetch(') + `.then(response => response.json());`;
-
   try {
-    const func = new Function(code);
-    const result = await func();
-    if (result instanceof Promise) {
-      const finalResult = await result;
-      editorView.value?.dispatch({
-        changes: {
-          from: 0,
-          to: editorView.value.state.doc.length,
-          insert: JSON.stringify(finalResult, null, 2),
-        },
-      });
-      globalDataStore.updateGlobalValue(JSON.stringify(finalResult));
-    } else {
-      editorView.value?.dispatch({
-        changes: {
-          from: 0,
-          to: editorView.value.state.doc.length,
-          insert: JSON.stringify(result, null, 2),
-        },
-      });
-      globalDataStore.updateGlobalValue(JSON.stringify(result));
+    // 普通同步
+    if(code.includes('console.log') && !code.includes('fetch(')){
+      // 用于存储捕获的日志信息
+      const capturedLogs:any[] = [];
+      // 保存原始的 console.log 方法
+      const originalLog = console.log;
+      // 重写 console.log 方法
+      console.log = function(...args) {
+        capturedLogs.push(args);
+        // 仍然调用原始的 console.log 方法，以保持正常的输出
+        originalLog.apply(console, args);
+      };
+
+      const func = new Function(code);
+      await func();
+
+      emit('render-json', capturedLogs);
+      console.log = originalLog;
+      return;
+    }else if(code.startsWith('fetch(')){
+      if (code.endsWith(';')) {
+        code = code.slice(0, -1);
+      }
+      code = code.replace(/fetch\(/, 'return fetch(') + `.then(response => response.json());`;
+
+      const func = new Function(code);
+      const result = await func();
+      if (result instanceof Promise) {
+        const finalResult = await result;
+        editorView.value?.dispatch({
+          changes: {
+            from: 0,
+            to: editorView.value.state.doc.length,
+            insert: JSON.stringify(finalResult, null, 2),
+          },
+        });
+        // globalDataStore.updateGlobalValue(JSON.stringify(finalResult));
+        emit('render-json', finalResult);
+      } else {
+        editorView.value?.dispatch({
+          changes: {
+            from: 0,
+            to: editorView.value.state.doc.length,
+            insert: JSON.stringify(result, null, 2),
+          },
+        });
+        // globalDataStore.updateGlobalValue(JSON.stringify(result));
+        emit('render-json', result);
+      }
+    }else if(isJSON(code)){
+        emit('render-json', JSON.parse(code));
+    }
+    else{
+      const func = new Function(code);
+      await func();
+      emit('render-json', {"Info": '请到控制台查看'});
     }
   } catch (error: any) {
-    globalDataStore.updateGlobalValue(`执行出错: ${error.message}`);
-    emit('render-json', {"Error": error.message});
+    console.log(error);
+    emit('render-json', {"Info": '请到控制台查看:     ' + error});
   }
+
 };
 
 const emitSearch = () => {
@@ -506,9 +522,10 @@ onUnmounted(() => {
   resize: both; /* 允许水平和垂直拖动调整大小 */
   max-width: 100%; /* 最大宽度 */
   max-height: 80vh;
-  min-width: 20%; /* 最小宽度，防止拖得太小 */
-  min-height: 100px; /* 最小高度，防止拖得太小 */
+  min-width: 260px; /* 最小宽度，防止拖得太小 */
+  min-height: 40px; /* 最小高度，防止拖得太小 */
   box-shadow: rgb(37, 42, 75) 4px 4px 10px;
+  overflow: hidden;
 }
 
 .editor-container:hover {
