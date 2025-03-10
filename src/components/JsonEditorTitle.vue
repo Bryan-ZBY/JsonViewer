@@ -3,6 +3,21 @@
     <div v-if="showCopied" class="copied-tooltip">复制成功</div>
     <div class="text-qQiIjw">JSON</div>
     <div class="action-UHHINY">
+      <!-- 运行按钮 -->
+      <div class="hoverable-fZ6eZQ" data-testid="code-block-copy" tabindex="0" aria-describedby="453o5bh" data-popupid="453o5bh" @click="runJS">
+        <span v-show="showRun" role="img" class="semi-icon semi-icon-default text-14" style="color: chartreuse">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+        </span>
+        <span v-show="!showRun" role="img" class="semi-icon semi-icon-default text-14">
+          <svg viewBox="0 0 24 24" width="1em" height="1em" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="css-i6dzq1">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </span>
+      </div>
+
       <!-- 复制按钮 -->
       <div class="hoverable-fZ6eZQ" data-testid="code-block-copy" tabindex="0" aria-describedby="453o5bh" data-popupid="453o5bh" @click="copyCode">
         <span role="img" class="semi-icon semi-icon-default text-14">
@@ -68,9 +83,22 @@ const emit = defineEmits<{
   (e: 'show-help-modal'): void;
   (e: 'to-big'): void;
   (e: 'to-small'): void;
+  (e: 'run-js'): void;
 }>();
 
 const showCopied = ref(false); // 控制复制提示的显示
+const showRun = ref(true); // 控制复制提示的显示
+
+
+// 复制代码到剪贴板
+const runJS = () => {
+  emit('run-js');
+  showRun.value = false; // 3秒后隐藏提示
+  setTimeout(() => {
+    showRun.value = true; // 3秒后隐藏提示
+  }, 1000);
+};
+
 
 // 复制代码到剪贴板
 const copyCode = () => {
@@ -88,6 +116,10 @@ const copyCode = () => {
 const toggleDarkMode = () => {
   document.body.classList.toggle('dark-mode');
 };
+
+defineExpose({
+  runJS, // 暴露这个方法
+});
 </script>
 
 <style scoped>

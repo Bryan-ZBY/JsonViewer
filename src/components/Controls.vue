@@ -8,8 +8,12 @@
             @show-help-modal="showHelpModal = true"
             @to-small="toSmall"
             @to-big="toBig"
+            @run-js="doJS"
+            ref="jsonEditorTitleRef"
           />
-          <div ref="editorRef" style="height: calc(100% - 40px)"></div>
+          <div ref="editorRef" style="height: calc(100% - 40px)"
+            @keydown="handleKeydown"
+          ></div>
         </div>
       </div>
 
@@ -19,7 +23,7 @@
 
       <button @click="emitRenderJson">加载</button>
       <button @click="clearEditor">清空</button>
-      <button @click="doJS">执行</button>
+      <!-- <button @click="doJS">执行</button> -->
       <button @click="zipData">压缩</button>
       <button @click="beautifyData">美化</button>
       <button @click="copyResult">复制</button>
@@ -372,8 +376,18 @@ const isInput = () => {
   return isTextareaFocused() || isInputFocused();
 };
 
+const jsonEditorTitleRef = ref(null);
 // 配置快捷键
 const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Enter') {
+    if(event.altKey){
+      event.preventDefault();
+      if(jsonEditorTitleRef.value){
+        jsonEditorTitleRef.value.runJS();
+      }
+    }
+  }
+
   if (event.key === 'Escape') {
     event.preventDefault();
     if (searchInputRef.value) {

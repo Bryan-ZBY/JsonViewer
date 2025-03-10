@@ -137,7 +137,7 @@ function GenerateEditorState(){
       javascript(), // JavaScript 语法高亮
       oneDark, // 暗色主题
       vim(), // 启用 Vim 模式
-      // lineWrappingExtension, // 启用自动换行
+      lineWrappingExtension, // 启用自动换行
 
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
