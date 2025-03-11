@@ -184,7 +184,7 @@ export function filterJsonValue(fil: any, jsonValue: string) {
     code = code.replace(".FirstOrDefault(", '.find(');
     code = code.replace(".Some(", '.any(');
     code = code.replace(".All(", '.every(');
-    code = code.replace(".0", '[0]');
+    code = code.replace(/.0/, '[0]');
 
     const func = new Function('input', code);
     let result = func(cleanedInput);

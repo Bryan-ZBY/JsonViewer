@@ -92,6 +92,23 @@ function getPartBeforeBracket(str: string): string {
   return bracketIndex === -1 ? str : str.slice(0, bracketIndex);
 }
 
+/**
+ * 模糊匹配
+ */
+function fuzzyMatch(input: string, target: string) {
+    let inputIndex = 0;
+    let targetIndex = 0;
+
+    while (inputIndex < input.length && targetIndex < target.length) {
+        if (input[inputIndex].toLowerCase() === target[targetIndex].toLowerCase()) {
+            inputIndex++;
+        }
+        targetIndex++;
+    }
+
+    return inputIndex === input.length;
+}
+
 // 计算过滤后的建议项
 const filteredData = computed(() => {
   if (!inputText.value) return [];
@@ -143,7 +160,8 @@ const filteredData = computed(() => {
   return allRealKeys.value
     .filter((key: string) => {
       const processedLastPart = getPartBeforeBracket(lastPart).toLowerCase();
-      return key.toLowerCase().startsWith(processedLastPart);
+      return fuzzyMatch(processedLastPart, key.toLowerCase())
+      // return key.toLowerCase().startsWith(processedLastPart);
     });
 });
 
