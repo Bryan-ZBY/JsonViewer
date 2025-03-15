@@ -21,28 +21,46 @@
         <Autocomplete @filter-json="filterJson"/>
       </div>
 
-      <button @click="emitRenderJson">加载</button>
-      <button @click="clearEditor">清空</button>
-      <!-- <button @click="doJS">执行</button> -->
-      <button @click="zipData">压缩</button>
-      <button @click="beautifyData">美化</button>
-      <button @click="copyResult">复制</button>
+      <div class="control-keys">
+        <div class="control-key1">
+          <button @click="emitRenderJson">加载</button>
+          <button @click="clearEditor">清空</button>
+          <button @click="zipData">压缩</button>
+          <button @click="beautifyData">美化</button>
+          <button @click="copyResult">复制</button>
+        </div>
 
-      <div class="search-wrapper">
-        <input
-          v-model="searchInput"
-          ref="searchInputRef"
-          type="text"
-          style="margin-right: 10px;
-          box-shadow: rgb(37 42 75) 2px 2px 5px inset;
-          background: beige;"
-          placeholder="Search JSON..."
-          @keydown.enter="handleEnter"
-          @keydown.up="handleArrowUp"
-          @keydown.down="handleArrowDown"
-        />
-        <button @click="emit('collapse-all')">收起</button>
+        <div class="control-key2">
+          <button @click="encode">加密</button>
+          <input
+            v-model="encryptKey"
+            ref="encryptKeyInputRef"
+            type="text"
+            style="box-shadow: rgb(37 42 75) 2px 2px 5px inset;
+            background: beige;"
+            placeholder="加密密钥"
+          />
+          <button @click="decode">解密</button>
+        </div>
+
+        <div class="control-key3">
+          <input
+            v-model="searchInput"
+            ref="searchInputRef"
+            type="text"
+            style="box-shadow: rgb(37 42 75) 2px 2px 5px inset;
+            background: beige;"
+            placeholder="Search JSON..."
+            @keydown.enter="handleEnter"
+            @keydown.up="handleArrowUp"
+            @keydown.down="handleArrowDown"
+          />
+          <button @click="emit('collapse-all')">收起</button>
+        </div>
       </div>
+
+
+
     </div>
 
     <!-- 使用新的快捷键帮助组件 -->
@@ -72,7 +90,9 @@ const emit = defineEmits<{
   (e: 'toggle-dark-mode'): void;
 }>();
 
+const encryptKey = ref('');
 const searchInput = ref('');
+const encryptKeyInputRef = ref<HTMLInputElement | null>(null);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const searchHistory = ref<string[]>([]);
 const historyIndex = ref(-1);
@@ -81,6 +101,18 @@ const showHelpModal = ref(false);
 const boxHeight = ref("300px");
 const boxWidth = ref("60%");
 const isProgrammaticResize = ref(false); // Flag to enable/disable transition
+
+// 加密
+const encode = () => {
+  const cleanedInput = (globalDataStore.jsonValue || JSON.stringify(defaultJson)).trim();
+  console.log('暂未实现')
+}
+
+// 解密
+const decode = () => {
+  const cleanedInput = globalDataStore.jsonValue.trim();
+  console.log('暂未实现')
+}
 
 // Computed style for editor-container
 const editorStyle = computed(() => ({
@@ -276,12 +308,12 @@ const clearEditor = () => {
 };
 
 const isJSON = (str: string) => {
-    try {
-        JSON.parse(str);
-        return true;
-    } catch (e) {
-        return false;
-    }
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 const doJS = async () => {
@@ -339,7 +371,7 @@ const doJS = async () => {
         emit('render-json', result);
       }
     }else if(isJSON(code)){
-        emit('render-json', JSON.parse(code));
+      emit('render-json', JSON.parse(code));
     }
     else{
       const func = new Function(code);
@@ -369,7 +401,9 @@ const isTextareaFocused = () => {
 };
 
 const isInputFocused = () => {
-  return document.activeElement === searchInputRef.value || document.activeElement?.tagName === "INPUT";
+  return document.activeElement === searchInputRef.value 
+    || document.activeElement === encryptKeyInputRef.value
+    || document.activeElement?.tagName === "INPUT";
 };
 
 const isInput = () => {
@@ -392,6 +426,9 @@ const handleKeyDown = (event: KeyboardEvent) => {
     event.preventDefault();
     if (searchInputRef.value) {
       searchInputRef.value.blur();
+    }
+    if(encryptKeyInputRef.value){
+      encryptKeyInputRef.value.blur();
     }
     showHelpModal.value = false;
   }
@@ -442,6 +479,9 @@ const handleEnter = () => {
   emitSearch();
   if (searchInputRef.value) {
     searchInputRef.value.blur();
+  }
+  if(encryptKeyInputRef.value){
+    encryptKeyInputRef.value.blur();
   }
 };
 
@@ -503,9 +543,7 @@ onUnmounted(() => {
 .controls input:focus,
 .controls textarea:focus,
 .controls button:focus {
-  outline: none;
-  border: 1px solid #282c34;
-  padding: 7px 11px;
+  outline: inset #6175c2;
 }
 
 .controls button {
@@ -568,4 +606,84 @@ onUnmounted(() => {
   color: #0f1d7e;
   opacity: 0.9; /* Firefox 默认会降低透明度，这里设置为 1 */
 }
+
+.control-keys {
+  width: 100%;
+  justify-content: space-between;
+  display: flex;
+  /* 添加过渡效果 */
+  transition: flex-direction 0.3s ease, gap 0.3s ease;
+}
+
+.control-keys div {
+  gap: 10px;
+  display: flex;
+  justify-content: center;
+  /* 添加过渡效果 */
+  transition: gap 0.3s ease, justify-content 0.3s ease;
+}
+
+/* 水平布局的样式 */
+.horizontal .control-keys {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* 触发动画 */
+  animation: horizontalAnimation 0.5s ease forwards;
+}
+
+.horizontal .control-keys div {
+  gap: 14px;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  /* 触发子元素动画 */
+  animation: childAnimation 0.5s ease forwards;
+}
+
+/* 定义父容器动画 */
+@keyframes horizontalAnimation {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    flex-direction: column; /* 最终保持水平布局 */
+  }
+}
+
+/* 定义子元素动画 */
+@keyframes childAnimation {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(10deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(0deg) scale(1); /* 最终恢复水平 */
+  }
+}
+
+/* 悬停效果 */
+.control-keys div:hover {
+  transform: scale(1.1);
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.horizontal .control-keys div {
+  gap: 14px;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
 </style>
