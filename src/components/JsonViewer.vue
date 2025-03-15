@@ -227,7 +227,11 @@ const copyKeyToClipboard = (value: any, key: string) => {
 };
 
 const copyToClipboard = (value: any, key: string) => {
-  const text = JSON.stringify(value, null, 2);
+  let text = value;
+  if (typeof value === 'object' && value !== null) {
+    text = JSON.stringify(value, null, 2);
+  }
+
   navigator.clipboard.writeText(text).then(() => {
     copyData.value = 'Copy succeeded!';
     setTimeout(() => (copyData.value = 'Copy'), 1500);

@@ -1,87 +1,122 @@
 import { JsonData } from '../types/JsonData';
 
+// 定义快捷键数据
+export const shortcuts = [
+  { key: '?', description: '帮助' },
+  { key: 'F8', description: '明暗模式切换' },
+  { key: 'F9', description: '布局切换' },
+  { key: 'F10', description: '输入区域最小化' },
+  { key: 'F11', description: '输入区域最大化' },
+  { key: 'G', description: '到底部' },
+  { key: 'iI | aA', description: '退出VIM-normal模式' },
+  { key: 'Esc | jk', description: '进入VIM-normal模式' },
+  { key: 'yy', description: '复制整行(文档内)' },
+  { key: 'p', description: '粘贴(仅作了文档内)' },
+  { key: 'dd', description: '删除整行' },
+  { key: 'A-k', description: '上移整行' },
+  { key: 'A-j', description: '下移整行' },
+  { key: 't', description: '向上滚动' },
+  { key: 'f', description: '向下滚动' },
+  { key: 'zc', description: '收起到父节点（折叠当前代码块）' },
+  { key: 'zo', description: '展开子节点（展开当前代码块）' },
+  { key: 'zz', description: '当前行居中' },
+  { key: 'gg', description: '到顶部' },
+  { key: 'G', description: '到底部' },
+  { key: '/', description: '启动正向搜索' },
+  { key: 'n', description: '下一个匹配项（搜索结果）' },
+  { key: 'N', description: '上一个匹配项（搜索结果）' },
+  { key: '%', description: '跳转到匹配的括号/符号' },
+  { key: 'u', description: '撤销' },
+  { key: 'Ctrl-r', description: '恢复' },
+  { key: 'V', description: '选一行' },
+  { key: '*', description: '搜索光标下的单词（正向）' },
+  // { key: '#', description: '搜索光标下的单词（反向）' },
+  { key: ':s/old/new', description: '替换当前行的 old 为 new' },
+  { key: ':%s/old/new/g', description: '全局替换 old 为 new' },
+];
+
+
 export const defaultJson: JsonData = {
   "author": "Baoyuan",
-  "description": "JSON查看器",
-  "date": "2025-02-19",
-  "functionality": {
-    "json_viewer": {
-      "description": "一个基于网页的JSON查看器，允许用户输入、渲染并与JSON数据进行交互。",
-      "features": [
+  "date": "2025-03-15",
+  "description": "支持 VIM 操作的 JSON 查看和编辑工具",
+  "help": {
+    "输入框": {
+      "VIM 模式": "支持 VIM 模式, 不习惯或者不小心进入 VIM 普通模式后, 按下 insert | i | a 可以退出来",
+      "运行函数": [
         {
-          "name": "渲染JSON",
-          "description": "以可折叠的树形结构渲染JSON数据，并对不同数据类型进行语法高亮显示。"
+          "console.log": "非异步方法的 console.log 内容会被收集起来打印到展示区域",
+          "示例": "console.log(123123)",
         },
         {
-          "name": "搜索",
-          "description": "允许用户在JSON数据中搜索特定的键或值，突出显示匹配项并展开相关节点。"
+          "fetch": "支持显示 fetch 请求结果, 结果会被打印到展示区域",
+          "示例": "fetch('https://jsonplaceholder.typicode.com/posts');",
+        }
+      ],
+    },
+    "过滤框": {
+      "item": "item 对应输入框内容, 支持 LINQ 部分语法, 回车更新",
+      "示例1": 'item.testExamples.Where(e => e.type == "对象")',
+      "示例2": "item.testExamples.SelectMany(e => e.example)",
+    },
+    "加解密": {
+      "加密": "加密需要密钥框内有密钥, 未输入密钥时点击加密, 会给出常用密钥列表",
+      "解密": "解密可以不输入密钥, 默认会遍历常用密钥列表, 解密成功后密钥框和展示区内容会更新, 默认列表无法解密时, 会使用输入密钥",
+    },
+    "调大小": {
+      "快捷键": "F8, F9, F10, F11 切换显示",
+      "到底部": 'G 展示数据过多时, 到达底部',
+      "到顶部": 'g 回到顶部',
+      "输入框": "支持拖动调整大小",
+    },
+
+    "部分快捷键": shortcuts,
+  },
+
+  "testExamples": [
+    {
+      "type": "对象",
+      "example": {
+        "name": "John",
+        "age": 30,
+        "isStudent": false,
+        "address": {
+          "street": "123 Main St",
+          "city": "Anytown",
+          "state": "CA"
+        }
+      }
+    },
+    {
+      "type": "数组",
+      "example": [
+        {
+          "type": "home",
+          "number": "123-456-7890"
         },
         {
-          "name": "折叠/展开",
-          "description": "用户可以折叠或展开JSON树中的所有节点，以便更轻松地导航。"
-        },
-        {
-          "name": "深色模式",
-          "description": "在亮色和深色主题之间切换，以在不同光照条件下获得更好的可读性。"
-        },
-        {
-          "name": "复制到剪贴板",
-          "description": "允许用户通过单击将JSON数据或特定值复制到剪贴板。"
-        },
-        {
-          "name": "返回顶部",
-          "description": "提供一个按钮，可快速滚动回页面顶部。"
+          "type": "work",
+          "number": "987-654-3210"
         }
       ]
     },
-    "data_types": {
-      "description": "支持各种JSON数据类型，包括对象、数组、字符串、数字、布尔值和空值。",
-      "examples": [
-        {
-          "type": "对象",
-          "example": {
-            "name": "John",
-            "age": 30,
-            "isStudent": false,
-            "address": {
-              "street": "123 Main St",
-              "city": "Anytown",
-              "state": "CA"
-            }
-          }
-        },
-        {
-          "type": "数组",
-          "example": [
-            {
-              "type": "home",
-              "number": "123-456-7890"
-            },
-            {
-              "type": "work",
-              "number": "987-654-3210"
-            }
-          ]
-        },
-        {
-          "type": "字符串",
-          "example": "这是一个字符串"
-        },
-        {
-          "type": "数字",
-          "example": 42
-        },
-        {
-          "type": "布尔值",
-          "example": true
-        },
-        {
-          "type": "空值",
-          "example": null
-        }
-      ]
+    {
+      "type": "字符串",
+      "example": "这是一个字符串"
+    },
+    {
+      "type": "数字",
+      "example": 42
+    },
+    {
+      "type": "布尔值",
+      "example": true
+    },
+    {
+      "type": "空值",
+      "example": null
     }
-  }
+  ]
 };
 
 const arrayMethods = [
@@ -155,20 +190,12 @@ export function getArrayMethods(jsonObj: any, path: string): string[] | null {
 
 export function extractKeys(obj: any, keySet = new Set()) {
   if (typeof obj === 'object' && obj!== null) {
-    // if (Array.isArray(obj)) {
-    //   // 只处理数组的第一个元素
-    //   if (obj.length > 0) {
-    //     extractKeys(obj[0], keySet);
-    //   }
-    // } else {
-      // 处理对象
-      for (const key in obj) {
-        if (!keySet.has(key)) {
-          keySet.add(key);
-        }
-        extractKeys(obj[key], keySet);
+    for (const key in obj) {
+      if (!keySet.has(key)) {
+        keySet.add(key);
       }
-    // }
+      extractKeys(obj[key], keySet);
+    }
   }
   return [...keySet, ...arrayMethods];
 }
@@ -184,15 +211,13 @@ export function filterJsonValue(fil: any, jsonValue: string) {
     code = code.replace(".FirstOrDefault(", '.find(');
     code = code.replace(".Some(", '.any(');
     code = code.replace(".All(", '.every(');
-    code = code.replace(/.0/, '[0]');
+    code = code.replace(/\.0/, '[0]');
 
     const func = new Function('input', code);
     let result = func(cleanedInput);
     if(typeof result !== 'object'){
       result = {'cur-data': result};
     }
-
-    // globalDataStore.updateGlobalValue(JSON.stringify(result));
 
     console.log(result);
     return result;
