@@ -10,11 +10,11 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
-import { useDataStore } from './store/GlobalData';
-import Controls from './components/Controls.vue';
-import JsonViewer from './components/JsonViewer.vue';
-import KeyPressDisplay from './components/KeyPressDisplay.vue';
-import { defaultJson } from './utils/JsonUtils';
+import { useDataStore } from '@/store/GlobalData';
+import Controls from '@/components/Controls.vue';
+import JsonViewer from '@/components/JsonViewer.vue';
+import KeyPressDisplay from '@/components/KeyPressDisplay.vue';
+import { defaultJson } from './utils/JsonUtils.ts';
 
 const jsonData = ref<any>(defaultJson);
 const jsonViewerRef = ref<InstanceType<typeof JsonViewer> | null>(null);
